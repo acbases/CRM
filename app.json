@@ -36,11 +36,18 @@
             "imageWidth": 76
           }
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2a0dc108-8ad3-4f5c-9bd4-61ae89d4693e"
+      }
     }
   }
 }

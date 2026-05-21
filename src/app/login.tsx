@@ -1,122 +1,115 @@
-import * as Device from 'expo-device';
-import { Link } from 'expo-router';
-import { Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+} from 'react-native';
+import LoginLayout from '../components/LoginLayout';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+export default function LoginScreen() {
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
+  const [loading, setLoading] = useState<boolean>(false);
 
+  const handleLogin = async () => {
+    if (!email || !password) {
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      return;
+    }
 
+    setLoading(true);
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
+    try {
+      const response = await fetch('https://allapps.alphaciment.com/crmapi/login.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      });
+
+      const data = await response.json();
+
+      console.log(data);
+
+      if (data.success) {
+        Alert.alert('Succès', 'Connexion réussie');
+        // TODO: navigation vers home
+      } else {
+        Alert.alert('Erreur', data.message || 'Login incorrect');
+      }
+    } catch (error: any) {
+      Alert.alert('Erreur réseau', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+    <LoginLayout>
+      <TextInput
+        style={styles.input}
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+      />
 
-export default function HomeScreen() {
-  return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+      <TextInput
+        style={styles.input}
+        placeholder="Mot de passe"
+        value={password}
+        onChangeText={setPassword}
+        secureTextEntry
+      />
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
-
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        <Link
-          href="/test-api"
-          style={{
-            paddingVertical: 10,
-            paddingHorizontal: 18,
-            borderRadius: 8,
-            backgroundColor: '#007aff',
-            alignItems: 'center',
-            textDecorationLine: 'none',
-          }}
-        >
-          <ThemedText type="linkPrimary">Aller à la page test</ThemedText>
-        </Link>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+      <TouchableOpacity style={styles.button} onPress={handleLogin}>
+        {loading ? (
+          <ActivityIndicator color="#fff" />
+        ) : (
+          <Text style={styles.buttonText}>Se connecter</Text>
+        )}
+      </TouchableOpacity>
+    </LoginLayout>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 20,
     justifyContent: 'center',
-    flexDirection: 'row',
-  },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
+    backgroundColor: '#f5f5f5',
   },
   title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    marginBottom: 30,
     textAlign: 'center',
   },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
+  input: {
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 10,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#ddd',
   },
   button: {
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    borderRadius: 8,
-    backgroundColor: '#007aff',
+    backgroundColor: '#007bff',
+    padding: 15,
+    borderRadius: 10,
     alignItems: 'center',
+  },
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
