@@ -25,8 +25,20 @@ export default function AppTabs() {
           <TabTrigger name="home" href="/" asChild>
             <TabButton>Home</TabButton>
           </TabTrigger>
-          <TabTrigger name="explore" href="/explore" asChild>
+          {/* <TabTrigger name="explore" href="/explore" asChild>
             <TabButton>Explore</TabButton>
+          </TabTrigger> */}
+          {/* <TabTrigger name="login" href="/login" asChild>
+            <TabButton>Connexion</TabButton>
+          </TabTrigger>
+          <TabTrigger name="formulaire" href="/formulaire" asChild>
+            <TabButton>Formulaire</TabButton>
+          </TabTrigger> */}
+          <TabTrigger name="newClient" href="/newClient" asChild>
+            <TabButton>Nouveau Client</TabButton>
+          </TabTrigger>
+          <TabTrigger name="newVisite" href="/newVisite" asChild>
+            <TabButton>Nouvelle Visite</TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
@@ -56,12 +68,12 @@ export function CustomTabList(props: TabListProps) {
     <View {...props} style={styles.tabListContainer}>
       <ThemedView type="backgroundElement" style={styles.innerContainer}>
         <ThemedText type="smallBold" style={styles.brandText}>
-          Expo Starter
+          CRM
         </ThemedText>
 
         {props.children}
 
-        <ExternalLink href="https://docs.expo.dev" asChild>
+        {/* <ExternalLink href="https://docs.expo.dev" asChild>
           <Pressable style={styles.externalPressable}>
             <ThemedText type="link">Docs</ThemedText>
             <SymbolView
@@ -70,7 +82,7 @@ export function CustomTabList(props: TabListProps) {
               size={12}
             />
           </Pressable>
-        </ExternalLink>
+        </ExternalLink> */}
       </ThemedView>
     </View>
   );
