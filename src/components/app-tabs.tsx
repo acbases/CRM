@@ -44,14 +44,14 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger> */}
       <NativeTabs.Trigger name="newClient">
-        <NativeTabs.Trigger.Label>Nouveau Client</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Nouveau Client letie</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/tabIcons/explore.png')}
           renderingMode="template"
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="newVisite">
-        <NativeTabs.Trigger.Label>Nouvelle Visite</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Label>Nouvelle Visite letie</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/expo-logo.png')}
           renderingMode="template"
