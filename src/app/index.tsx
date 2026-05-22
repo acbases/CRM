@@ -13,7 +13,7 @@ export default function HomeScreen() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch('https://allapps.alphaciment.com/crmapi/test.php')
+    fetch('https://allapps.alphaciment.com/crm_back/api/clients')
       .then((response) => response.json())
       .then((json) => {
         console.log(json);
