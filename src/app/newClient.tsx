@@ -38,6 +38,11 @@ const agences = [
   'Agence Analakely',
 ];
 
+interface CategorieClient {
+  id: number;
+  intitule: string;
+}
+
 export default function NewClientScreen() {
   const [categorie, setCategorie] = useState('');
   const [nom, setNom] = useState('');
@@ -47,6 +52,12 @@ export default function NewClientScreen() {
   const [agence, setAgence] = useState('');
   const [quartier, setQuartier] = useState('');
   const [submitted, setSubmitted] = useState(false);
+
+const [dataCategorieClient, setDataCategorieClient] = useState<CategorieClient[]>([]);
+const [categorieId, setCategorieId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
   const [showCorrespondant, setShowCorrespondant] =
   useState(false);
 
@@ -88,6 +99,21 @@ export default function NewClientScreen() {
     );
   };
 
+  useEffect(() => {
+    fetch('https://allapps.alphaciment.com/crm_back/api/categorieClients')
+      .then((response) => response.json())
+      .then((json) => {
+        console.log(json);
+        setDataCategorieClient(Array.isArray(json) ? json : []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Error:', err);
+        setError('Erreur lors du chargement: ' + err.message);
+        setLoading(false);
+      });
+  }, []);
+
   const handleSubmit = () => {
     console.log({
       categorie,
@@ -116,6 +142,7 @@ export default function NewClientScreen() {
       return () => clearTimeout(timer);
     }
   }, [submitted]);
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -411,13 +438,14 @@ export default function NewClientScreen() {
                   Catégorie client
                 </Text>
 
-                {categoriesClient.map(
+                {dataCategorieClient.map(
                   (item) => (
                     <TouchableOpacity
-                      key={item}
+                      key={item.id}
                       style={styles.modalItem}
                       onPress={() => {
-                        setCategorie(item);
+                        setCategorie(item.intitule);
+                        setCategorieId(item.id);
                         setCategoryModalVisible(
                           false
                         );
@@ -428,7 +456,7 @@ export default function NewClientScreen() {
                           styles.modalItemText
                         }
                       >
-                        {item}
+                        {item.intitule}
                       </Text>
                     </TouchableOpacity>
                   )
