@@ -60,7 +60,7 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="planning">
         <NativeTabs.Trigger.Label>Planning</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/splash-icon.png')}
+          src={require('@/assets/images/favicon.png')}
           renderingMode="template"
         />
       </NativeTabs.Trigger>
