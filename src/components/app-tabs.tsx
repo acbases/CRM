@@ -32,28 +32,28 @@ export default function AppTabs() {
       <NativeTabs.Trigger name="login">
         <NativeTabs.Trigger.Label>Connexion</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/login.png')}
+          // src={require('@/assets/images/tabIcons/login.png')}
           renderingMode="template"
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="formulaire">
         <NativeTabs.Trigger.Label>Formulaire</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/formulaire.png')}
+          // src={require('@/assets/images/tabIcons/formulaire.png')}
           renderingMode="template"
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="newClient">
         <NativeTabs.Trigger.Label>Nouveau Client</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/newClient.png')}
+          // src={require('@/assets/images/tabIcons/newClient.png')}
           renderingMode="template"
         />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="newVisite">
         <NativeTabs.Trigger.Label>Nouvelle Visite</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/newVisite.png')}
+          // src={require('@/assets/images/tabIcons/newVisite.png')}
           renderingMode="template"
         />
       </NativeTabs.Trigger>

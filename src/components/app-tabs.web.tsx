@@ -28,12 +28,12 @@ export default function AppTabs() {
           {/* <TabTrigger name="explore" href="/explore" asChild>
             <TabButton>Explore</TabButton>
           </TabTrigger> */}
-          <TabTrigger name="login" href="/login" asChild>
+          {/* <TabTrigger name="login" href="/login" asChild>
             <TabButton>Connexion</TabButton>
           </TabTrigger>
           <TabTrigger name="formulaire" href="/formulaire" asChild>
             <TabButton>Formulaire</TabButton>
-          </TabTrigger>
+          </TabTrigger> */}
           <TabTrigger name="newClient" href="/newClient" asChild>
             <TabButton>Nouveau Client</TabButton>
           </TabTrigger>

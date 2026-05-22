@@ -2,7 +2,7 @@
   "expo": {
     "name": "CRM",
     "slug": "CRM",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "crm",
@@ -19,7 +19,8 @@
       },
       "predictiveBackGestureEnabled": false,
       "usesCleartextTraffic": true,
-      "package": "com.anonymous.CRM"
+      "package": "com.anonymous.CRM",
+      "versionCode": 2
     },
     "web": {
       "output": "static",
@@ -48,6 +49,12 @@
       "eas": {
         "projectId": "2a0dc108-8ad3-4f5c-9bd4-61ae89d4693e"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/2a0dc108-8ad3-4f5c-9bd4-61ae89d4693e"
     }
   }
 }
