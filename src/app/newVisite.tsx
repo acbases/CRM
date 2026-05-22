@@ -300,7 +300,7 @@ const onChangeDate = (event: any, selectedDate?: Date) => {
           onPress={handleSubmit}
         >
           <Text style={styles.btnText}>
-            Enregistrer
+            ✓ Enregistrer
           </Text>
         </TouchableOpacity>
       </ScrollView>
