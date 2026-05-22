@@ -35,10 +35,10 @@ export default function AppTabs() {
             <TabButton>Formulaire</TabButton>
           </TabTrigger> */}
           <TabTrigger name="newClient" href="/newClient" asChild>
-            <TabButton>Nouveau Client letie</TabButton>
+            <TabButton>Nouveau Client </TabButton>
           </TabTrigger>
           <TabTrigger name="newVisite" href="/newVisite" asChild>
-            <TabButton>Nouvelle Visite letie</TabButton>
+            <TabButton>Nouvelle Visite </TabButton>
           </TabTrigger>
         </CustomTabList>
       </TabList>
