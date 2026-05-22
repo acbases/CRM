@@ -57,6 +57,13 @@ export default function AppTabs() {
           renderingMode="template"
         />
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="planning">
+        <NativeTabs.Trigger.Label>Planning</NativeTabs.Trigger.Label>
+        <NativeTabs.Trigger.Icon
+          src={require('@/assets/images/splash-icon.png')}
+          renderingMode="template"
+        />
+      </NativeTabs.Trigger>
       
     </NativeTabs>
   );

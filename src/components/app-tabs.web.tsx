@@ -40,6 +40,9 @@ export default function AppTabs() {
           <TabTrigger name="newVisite" href="/newVisite" asChild>
             <TabButton>Nouvelle Visite </TabButton>
           </TabTrigger>
+          <TabTrigger name="planning" href="/planning" asChild>
+            <TabButton>Planning</TabButton>
+          </TabTrigger>
         </CustomTabList>
       </TabList>
     </Tabs>

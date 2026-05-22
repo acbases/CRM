@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   SafeAreaView,
   View,
@@ -21,6 +21,16 @@ const agenceList = ['Agence Centrale', 'Agence Nord', 'Agence Sud'];
 const acquereurList = ['Agent 1', 'Agent 2', 'Agent 3'];
 
 const clientsMock = ['Jumbo Score', 'TELMA', 'Orange', 'Star'];
+interface Client {
+  id: number;
+  nom: string;
+  latitude: string;
+  longitude: string;
+  zone: string;
+  quartier: string;
+  idagence: number;
+  idcategorie: number;
+}
 
 export default function NewVisiteScreen() {
   /* STATES */
@@ -32,7 +42,7 @@ export default function NewVisiteScreen() {
   const [client, setClient] = useState('');
   const [dateVisite, setDateVisite] = useState('');
   const [objectif, setObjectif] = useState('');
-
+const [error, setError] = useState('');
   const [showClientList, setShowClientList] = useState(false);
 
   /* MODALS */
@@ -48,12 +58,31 @@ export default function NewVisiteScreen() {
   const [otherTypeClient, setOtherTypeClient] = useState('');
   const [otherAgence, setOtherAgence] = useState('');
 
-const [date, setDate] = useState(new Date());
-const [showPicker, setShowPicker] = useState(false);
+  const [date, setDate] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
 
-  const filteredClients = clientsMock.filter((c) =>
-    c.toLowerCase().includes(client.toLowerCase())
-  );
+  const [dataClient, setDataClient] = useState<Client[]>([]);
+  const [clientId, setClientId] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
+
+useEffect(() => {
+    fetch('https://allapps.alphaciment.com/crm_back/api/clients')
+      .then((response) => response.json())
+      .then((json) => {
+        console.log(json);
+        setDataClient(Array.isArray(json) ? json : []);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error('Error:', err);
+        setError('Erreur lors du chargement: ' + err.message);
+        setLoading(false);
+      });
+  }, []);
+
+const filteredClients = dataClient.filter((c: Client) =>
+  c.nom?.toLowerCase().includes(client.toLowerCase())
+);
 
   const handleSubmit = () => {
     console.log({
@@ -208,16 +237,17 @@ const onChangeDate = (event: any, selectedDate?: Date) => {
 
         {showClientList && client.length > 0 && (
           <View style={styles.suggestion}>
-            {filteredClients.map((c) => (
-              <TouchableOpacity
-                key={c}
+            {filteredClients.map((c: Client) => (
+                <TouchableOpacity
+                key={c.id}
                 onPress={() => {
-                  setClient(c);
-                  setShowClientList(false);
+                    setClient(c.nom);
+                    setClientId(c.id);
+                    setShowClientList(false);
                 }}
-              >
-                <Text style={styles.item}>{c}</Text>
-              </TouchableOpacity>
+                >
+                <Text style={styles.item}>{c.nom}</Text>
+                </TouchableOpacity>
             ))}
           </View>
         )}
