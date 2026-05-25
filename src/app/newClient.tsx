@@ -65,6 +65,8 @@ export default function NewClientScreen() {
     },
   ]);
 
+  const [idClientCreated, setIdClientCreated] = useState<number | null>(null);
+
   /* ===================== LOAD DATA ===================== */
 
   useEffect(() => {
@@ -190,7 +192,7 @@ export default function NewClientScreen() {
       };
 
       const clientRes = await fetch(
-        'https://allapps.alphaciment.com/crm_back/api/clients',
+        'https://allapps.alphaciment.com/crm_back/api/client',
         {
           method: 'POST',
           headers: {
@@ -206,6 +208,7 @@ export default function NewClientScreen() {
 
       const clientData = await clientRes.json();
       const idclient = clientData.id;
+      setIdClientCreated(clientData.id);
 
       console.log('CLIENT CREATED:', clientData);
 
@@ -651,13 +654,10 @@ export default function NewClientScreen() {
       </KeyboardAvoidingView>
       <NewCorrespondant
         visible={showCorrespondant}
-        onClose={() =>
-            setShowCorrespondant(false)
-        }
-        onSave={(data) => {
-            console.log(data);
-        }}
-        />
+        idclient={idClientCreated}
+        onClose={() => setShowCorrespondant(false)}
+        onSave={(data) => console.log(data)}
+      />
     </SafeAreaView>
   );
 }

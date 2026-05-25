@@ -13,44 +13,80 @@ import {
 
 interface NewCorrespondantProps {
   visible: boolean;
+  idclient: number | null;
   onClose: () => void;
-  onSave?: (data: {
-    nom: string;
-    poste: string;
-    contact: string;
-  }) => void;
+  onSave?: (data: { id: number; nom: string; poste: string; contact: string }) => void;
 }
 
 export default function NewCorrespondant({
   visible,
   onClose,
   onSave,
+  idclient,
 }: NewCorrespondantProps) {
   const [nom, setNom] = useState('');
   const [poste, setPoste] = useState('');
   const [contact, setContact] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSave = () => {
-    if (!nom.trim()) return;
+  const handleSave = async () => {
+    if (!nom.trim() || !idclient) return;
 
-    const data = {
-      nom,
-      poste,
-      contact,
-    };
+    try {
+      const payload = {
+        idclient: idclient,
+        nom: nom,
+        poste: poste,
+        contact: contact,
+      };
 
-    console.log('Correspondant:', data);
+      const res = await fetch(
+        'https://allapps.alphaciment.com/crm_back/api/correspondant',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        }
+      );
 
-    onSave?.(data);
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
 
-    setSubmitted(true);
+      const correspondant = await res.json();
+      const idcorrespondant = correspondant.id;
 
-    setTimeout(() => {
-      setSubmitted(false);
-      resetForm();
-      onClose();
-    }, 1200);
+      console.log('CORRESPONDANT CREATED:', correspondant);
+
+      // 👉 liaison client - correspondant
+      await fetch(
+        'https://allapps.alphaciment.com/crm_back/api/correspondantClient',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            idclient: idclient,
+            idcorrespondant: idcorrespondant,
+          }),
+        }
+      );
+
+      onSave?.(correspondant);
+
+      setSubmitted(true);
+
+      setTimeout(() => {
+        setSubmitted(false);
+        resetForm();
+        onClose();
+      }, 1200);
+    } catch (error) {
+      console.error('ERROR SAVE CORRESPONDANT:', error);
+    }
   };
 
   const resetForm = () => {
