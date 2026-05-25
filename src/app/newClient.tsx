@@ -14,33 +14,21 @@ import {
   Pressable,
 } from 'react-native';
 
-interface Fournisseur {
-  id: number;
-  valeur: string;
-}
-
-const categoriesClient = [
-  'Particulier',
-  'Entreprise',
-  'Collectivité',
-  'Association',
-  'Revendeur',
-  'Grossiste',
-];
-
-const agences = [
-  'Agence Centrale',
-  'Agence Nord',
-  'Agence Sud',
-  'Agence Est',
-  'Agence Ouest',
-  'Agence Ivandry',
-  'Agence Analakely',
-];
-
 interface CategorieClient {
   id: number;
   intitule: string;
+}
+
+interface Agence {
+  id: number;
+  intitule: string;
+}
+
+interface Fournisseur {
+  id: number;
+  nom: string;
+  suggestions?: any[];
+  showSuggestions?: boolean;
 }
 
 export default function NewClientScreen() {
@@ -53,95 +41,259 @@ export default function NewClientScreen() {
   const [quartier, setQuartier] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
-const [dataCategorieClient, setDataCategorieClient] = useState<CategorieClient[]>([]);
-const [categorieId, setCategorieId] = useState<number | null>(null);
+  const [dataCategorieClient, setDataCategorieClient] = useState<CategorieClient[]>([]);
+  const [dataAgences, setDataAgences] = useState<Agence[]>([]);
+  const [dataFournisseurs, setDataFournisseurs] = useState<Fournisseur[]>([]);
+
+  const [categorieId, setCategorieId] = useState<number | null>(null);
+  const [agenceId, setAgenceId] = useState<number | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const [showCorrespondant, setShowCorrespondant] =
-  useState(false);
+  const [showCorrespondant, setShowCorrespondant] = useState(false);
 
-  const [categoryModalVisible, setCategoryModalVisible] =
-    useState(false);
-  const [agencyModalVisible, setAgencyModalVisible] =
-    useState(false);
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [agencyModalVisible, setAgencyModalVisible] = useState(false);
 
-  const [fournisseurs, setFournisseurs] = useState<
-    Fournisseur[]
-  >([{ id: 1, valeur: '' }]);
+  const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([
+    {
+      id: 1,
+      nom: '',
+      suggestions: [],
+      showSuggestions: false,
+    },
+  ]);
+
+  /* ===================== LOAD DATA ===================== */
+
+  useEffect(() => {
+    fetch('https://allapps.alphaciment.com/crm_back/api/categorieClients')
+      .then(res => res.json())
+      .then(json => setDataCategorieClient(Array.isArray(json) ? json : []))
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetch('https://allapps.alphaciment.com/crm_back/api/agences')
+      .then(res => res.json())
+      .then(json => setDataAgences(Array.isArray(json) ? json : []))
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetch('https://allapps.alphaciment.com/crm_back/api/fournisseurs')
+      .then(res => res.json())
+      .then(json => setDataFournisseurs(Array.isArray(json) ? json : []))
+      .catch(err => setError(err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  /* ===================== FOURNISSEUR LOGIC ===================== */
 
   const ajouterFournisseur = () => {
-    setFournisseurs((prev) => [
+    setFournisseurs(prev => [
       ...prev,
       {
         id: Date.now(),
-        valeur: '',
+        nom: '',
+        suggestions: [],
+        showSuggestions: false,
       },
     ]);
   };
 
   const supprimerFournisseur = (id: number) => {
     if (fournisseurs.length === 1) return;
-
-    setFournisseurs((prev) =>
-      prev.filter((f) => f.id !== id)
-    );
+    setFournisseurs(prev => prev.filter(f => f.id !== id));
   };
 
-  const mettreAJourFournisseur = (
-    id: number,
-    valeur: string
-  ) => {
-    setFournisseurs((prev) =>
-      prev.map((f) =>
-        f.id === id ? { ...f, valeur } : f
+  const mettreAJourFournisseur = (id: number, text: string) => {
+    const filtered =
+      text.trim().length > 0
+        ? dataFournisseurs.filter(f =>
+            f.nom.toLowerCase().includes(text.toLowerCase())
+          )
+        : [];
+
+    setFournisseurs(prev =>
+      prev.map(f =>
+        f.id === id
+          ? {
+              ...f,
+              nom: text,
+              suggestions: filtered,
+              showSuggestions: true,
+            }
+          : f
       )
     );
   };
 
-  useEffect(() => {
-    fetch('https://allapps.alphaciment.com/crm_back/api/categorieClients')
-      .then((response) => response.json())
-      .then((json) => {
-        console.log(json);
-        setDataCategorieClient(Array.isArray(json) ? json : []);
-        setLoading(false);
+  const selectionnerFournisseur = (id: number, nom: string) => {
+    setFournisseurs(prev =>
+      prev.map(f =>
+        f.id === id
+          ? {
+              ...f,
+              nom,
+              suggestions: [],
+              showSuggestions: false,
+            }
+          : f
+      )
+    );
+  };
+
+  const sauvegarderFournisseurs = async () => {
+    return Promise.all(
+      fournisseurs.map(async f => {
+        const exist = dataFournisseurs.find(
+          x => x.nom.toLowerCase() === f.nom.toLowerCase()
+        );
+
+        if (exist) return exist;
+
+        const res = await fetch(
+          'https://allapps.alphaciment.com/crm_back/api/fournisseur',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ nom: f.nom }),
+          }
+        );
+
+        return await res.json();
       })
-      .catch((err) => {
-        console.error('Error:', err);
-        setError('Erreur lors du chargement: ' + err.message);
-        setLoading(false);
-      });
-  }, []);
+    );
+  };
 
-  const handleSubmit = () => {
-    console.log({
-      categorie,
-      nom,
-      latitude,
-      longitude,
-      zone,
-      quartier,
-      agence,
-      fournisseurs,
-    });
+  /* ===================== SUBMIT ===================== */
 
-    setSubmitted(true);
+  const handleSubmit = async () => {
+    try {
+      setLoading(true);
 
-    setTimeout(() => {
-    setShowCorrespondant(true);
-    }, 500);
+      /* =====================
+        1. CREATE CLIENT
+      ===================== */
+      const clientPayload = {
+        nom: nom,
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
+        zone: zone,
+        quartier: quartier,
+        idagence: agenceId,
+        idcategorie: categorieId,
+      };
+
+      const clientRes = await fetch(
+        'https://allapps.alphaciment.com/crm_back/api/clients',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(clientPayload),
+        }
+      );
+
+      if (!clientRes.ok) {
+        throw new Error(await clientRes.text());
+      }
+
+      const clientData = await clientRes.json();
+      const idclient = clientData.id;
+
+      console.log('CLIENT CREATED:', clientData);
+
+      /* =====================
+        2. RESOLVE FOURNISSEURS
+        (existing or create)
+      ===================== */
+
+      const resolvedFournisseurs = await Promise.all(
+        fournisseurs.map(async (f) => {
+          // check exist locally
+          let exist = dataFournisseurs.find(
+            (df) =>
+              df.nom.trim().toLowerCase() ===
+              f.nom.trim().toLowerCase()
+          );
+
+          // if not exist → create
+          if (!exist) {
+            const res = await fetch(
+              'https://allapps.alphaciment.com/crm_back/api/fournisseur',
+              {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ nom: f.nom }),
+              }
+            );
+
+            exist = await res.json();
+          }
+
+          return exist;
+        })
+      );
+
+      console.log('FOURNISSEURS RESOLVED:', resolvedFournisseurs);
+
+      /* =====================
+        3. LINK CLIENT - FOURNISSEURS
+      ===================== */
+
+      await Promise.all(
+        resolvedFournisseurs
+          .filter((f): f is { id: number; nom: string } => f != null)
+          .map((f) => (
+              fetch(
+              'https://allapps.alphaciment.com/crm_back/api/fournisseurClient',
+              {
+                  method: 'POST',
+                  headers: {
+                  'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                  idclient: idclient,
+                  idfournisseur: f.id,
+                  }),
+              }
+              )
+          )
+        )
+      );
+
+      /* =====================
+        4. SUCCESS UI
+      ===================== */
+
+      setSubmitted(true);
+
+      setTimeout(() => {
+        setShowCorrespondant(true);
+      }, 500);
+    } catch (error: any) {
+      console.error('ERROR HANDLE SUBMIT:', error);
+      setError(error.message || 'Erreur lors de la création');
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {
     if (submitted) {
-      const timer = setTimeout(() => {
-        setSubmitted(false);
-      }, 3000);
-
+      const timer = setTimeout(() => setSubmitted(false), 3000);
       return () => clearTimeout(timer);
     }
   }, [submitted]);
+
 
 
   return (
@@ -334,78 +486,57 @@ const [categorieId, setCategorieId] = useState<number | null>(null);
             </View>
 
             {/* FOURNISSEURS */}
-            <View style={styles.field}>
-              <Text style={styles.label}>
-                Fournisseur(s)
-              </Text>
-
-              {fournisseurs.map(
-                (fournisseur, index) => (
-                  <View
-                    key={fournisseur.id}
-                    style={styles.supplierRow}
-                  >
-                    <TextInput
-                      style={[
-                        styles.input,
-                        styles.supplierInput,
-                      ]}
-                      placeholder={`Fournisseur ${
-                        index + 1
-                      }`}
-                      value={fournisseur.valeur}
-                      onChangeText={(text) =>
-                        mettreAJourFournisseur(
-                          fournisseur.id,
-                          text
-                        )
-                      }
-                    />
-
+            <View style={styles.card}>
+              <Text style={styles.sectionLabel}>Fournisseurs</Text>
+  
+              {fournisseurs.map((f, index) => (
+                <View key={f.id} style={{ marginBottom: 10 }}>
+                  <View style={styles.supplierRow}>
+                    <View style={{ flex: 1 }}>
+                      <TextInput
+                        style={styles.input}
+                        placeholder={`Fournisseur ${index + 1}`}
+                        value={f.nom}
+                        onChangeText={text =>
+                          mettreAJourFournisseur(f.id, text)
+                        }
+                      />
+  
+                      {f.showSuggestions && (f.suggestions?.length ?? 0) > 0 && (
+                        <View style={styles.suggestionBox}>
+                          {(f.suggestions ?? []).map((item: any) => (
+                            <TouchableOpacity
+                              key={item.id}
+                              style={styles.suggestionItem}
+                              onPress={() =>
+                                selectionnerFournisseur(f.id, item.nom)
+                              }
+                            >
+                              <Text>{item.nom}</Text>
+                            </TouchableOpacity>
+                          ))}
+                        </View>
+                      )}
+                    </View>
+  
                     <TouchableOpacity
-                      style={[
-                        styles.iconButton,
-                        styles.removeButton,
-                      ]}
-                      onPress={() =>
-                        supprimerFournisseur(
-                          fournisseur.id
-                        )
-                      }
+                      style={styles.removeButton}
+                      onPress={() => supprimerFournisseur(f.id)}
                     >
-                      <Text
-                        style={
-                          styles.iconButtonText
-                        }
-                      >
-                        −
-                      </Text>
+                      <Text style={{ fontSize: 20 }}>−</Text>
                     </TouchableOpacity>
-
-                    {index ===
-                      fournisseurs.length -
-                        1 && (
+  
+                    {index === fournisseurs.length - 1 && (
                       <TouchableOpacity
-                        style={[
-                          styles.iconButton,
-                          styles.addButton,
-                        ]}
-                        onPress={
-                          ajouterFournisseur
-                        }
+                        style={styles.addButton}
+                        onPress={ajouterFournisseur}
                       >
-                        <Text
-                          style={
-                            styles.addButtonText
-                          }
-                        >
-                          +
-                        </Text>
+                        <Text style={{ color: '#fff', fontSize: 20 }}>+</Text>
                       </TouchableOpacity>
                     )}
                   </View>
-                )
-              )}
+                </View>
+              ))}
             </View>
 
             {/* BOUTON */}
@@ -482,12 +613,13 @@ const [categorieId, setCategorieId] = useState<number | null>(null);
                   Agence
                 </Text>
 
-                {agences.map((item) => (
+                {dataAgences.map((item: Agence) => (
                   <TouchableOpacity
-                    key={item}
+                    key={item.id}
                     style={styles.modalItem}
                     onPress={() => {
-                      setAgence(item);
+                      setAgence(item.intitule);
+                      setAgenceId(item.id);
                       setAgencyModalVisible(
                         false
                       );
@@ -498,7 +630,7 @@ const [categorieId, setCategorieId] = useState<number | null>(null);
                         styles.modalItemText
                       }
                     >
-                      {item}
+                      {item.intitule}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -566,6 +698,37 @@ const styles = StyleSheet.create({
   headerIconText: {
     fontSize: 24,
   },
+
+    addButton: {
+    backgroundColor: '#d71f27',
+    padding: 10,
+    borderRadius: 10,
+  },
+
+  removeButton: {
+    backgroundColor: '#e5e7eb',
+    padding: 10,
+    borderRadius: 10,
+  },
+
+  suggestionBox: {
+  backgroundColor: '#fff',
+  borderWidth: 1,
+  borderColor: '#e5e7eb',
+  borderRadius: 10,
+  marginTop: 5,
+  maxHeight: 160,
+  overflow: 'hidden',
+  elevation: 5, // Android shadow
+  zIndex: 999,  // important pour apparaître au-dessus
+},
+
+suggestionItem: {
+  paddingVertical: 12,
+  paddingHorizontal: 14,
+  borderBottomWidth: 1,
+  borderBottomColor: '#f1f1f1',
+},
 
   title: {
     fontSize: 22,
@@ -666,13 +829,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  addButton: {
-    backgroundColor: '#d71f27',
-  },
 
-  removeButton: {
-    backgroundColor: '#e5e7eb',
-  },
 
   iconButtonText: {
     fontSize: 24,
