@@ -32,12 +32,37 @@ interface Client {
   idcategorie: number;
 }
 
+interface CategorieClient {
+  id: number;
+  intitule: string;
+}
+
+interface Agence {
+  id: number;
+  intitule: string;
+}
+
+interface TypeVisite {
+  id: number;
+  nom: string;
+}
+
+interface CategorieVisite {
+  id: number;
+  intitule: string;
+}
+
 export default function NewVisiteScreen() {
   /* STATES */
   const [nature, setNature] = useState('');
-  const [typeVisite, setTypeVisite] = useState('');
-  const [typeClient, setTypeClient] = useState('');
-  const [agenceClient, setAgenceClient] = useState('');
+  const [typeVisite, setTypeVisite] = useState<string>('');
+  const [motifVisite, setMotifVisite] = useState<string>('');
+  const [motifVisiteList, setMotifVisiteList] = useState<CategorieVisite[]>([]);
+  const [typeVisiteList, setTypeVisiteList] = useState<TypeVisite[]>([]);
+  const [typeClient, setTypeClient] = useState<string>('');
+  const [typeClientList, setTypeClientList] = useState<CategorieClient[]>([]);
+  const [agenceClient, setAgenceClient] = useState<string>('');
+  const [agenceClientList, setAgenceClientList] = useState<Agence[]>([]);
   const [acquisiteur, setAcquisiteur] = useState('');
   const [client, setClient] = useState('');
   const [dateVisite, setDateVisite] = useState('');
@@ -62,6 +87,8 @@ const [error, setError] = useState('');
   const [showPicker, setShowPicker] = useState(false);
 
   const [dataClient, setDataClient] = useState<Client[]>([]);
+  const [typeClientId, setTypeClientId] = useState<number | null>(null);
+  const [agenceClientId, setAgenceClientId] = useState<number | null>(null);
   const [clientId, setClientId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -79,6 +106,39 @@ useEffect(() => {
         setLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+      fetch('https://allapps.alphaciment.com/crm_back/api/categorieClients')
+        .then(res => res.json())
+        .then(json => setTypeClientList(Array.isArray(json) ? json : []))
+        .catch(err => setError(err.message))
+        .finally(() => setLoading(false));
+    }, []);
+
+    useEffect(() => {
+      fetch('https://allapps.alphaciment.com/crm_back/api/categorieVisites')
+        .then(res => res.json())
+        .then(json => setMotifVisiteList(Array.isArray(json) ? json : []))
+        .catch(err => setError(err.message))
+        .finally(() => setLoading(false));
+    }, []);
+
+    useEffect(() => {
+      fetch('https://allapps.alphaciment.com/crm_back/api/typeVisites')
+        .then(res => res.json())
+        .then(json => setTypeVisiteList(Array.isArray(json) ? json : []))
+        .catch(err => setError(err.message))
+        .finally(() => setLoading(false));
+    }, []);
+
+    useEffect(() => {
+      fetch('https://allapps.alphaciment.com/crm_back/api/agences')
+        .then(res => res.json())
+        .then(json => setAgenceClientList(Array.isArray(json) ? json : []))
+        .catch(err => setError(err.message))
+        .finally(() => setLoading(false));
+    }, []);
+
 
 const filteredClients = dataClient.filter((c: Client) =>
   c.nom?.toLowerCase().includes(client.toLowerCase())
@@ -178,11 +238,11 @@ const onChangeDate = (event: any, selectedDate?: Date) => {
         {/* NATURE */}
         {renderSelect(
           'Nature visite',
-          nature,
-          setNature,
+          motifVisite,
+          setMotifVisite,
           modalNature,
           setModalNature,
-          natureVisiteList,
+          motifVisiteList.map(item => item.intitule), // ✔ string[]
           otherNature,
           setOtherNature
         )}
@@ -194,7 +254,7 @@ const onChangeDate = (event: any, selectedDate?: Date) => {
           setTypeVisite,
           modalTypeVisite,
           setModalTypeVisite,
-          typeVisiteList,
+          typeVisiteList.map(item => item.nom), // ✔ string[],
           otherTypeVisite,
           setOtherTypeVisite
         )}
@@ -206,7 +266,7 @@ const onChangeDate = (event: any, selectedDate?: Date) => {
           setTypeClient,
           modalTypeClient,
           setModalTypeClient,
-          typeClientList,
+          typeClientList.map(item => item.intitule),
           otherTypeClient,
           setOtherTypeClient
         )}
@@ -218,7 +278,7 @@ const onChangeDate = (event: any, selectedDate?: Date) => {
           setAgenceClient,
           modalAgence,
           setModalAgence,
-          agenceList,
+          agenceClientList.map(item => item.intitule),
           otherAgence,
           setOtherAgence
         )}
