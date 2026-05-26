@@ -39,7 +39,20 @@
           }
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Autoriser l'accès à la caméra pour scanner les QR codes"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Autoriser l'accès aux photos",
+          "cameraPermission": "Autoriser l'accès à la caméra pour prendre une photo"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

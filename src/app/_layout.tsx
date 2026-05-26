@@ -7,6 +7,7 @@ import AppTabs from '@/components/app-tabs';
 
 import * as Updates from 'expo-updates';
 import { useEffect } from 'react';
+import { Stack } from 'expo-router';
 
 export default function TabLayout() {
   useEffect(() => {

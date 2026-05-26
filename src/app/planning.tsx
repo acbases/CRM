@@ -1,112 +1,145 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import { TouchableOpacity } from 'react-native';
 
 
 
-interface Visite {
+export interface Visite {
   id: number;
-  nomClient: string;
-  categorieClient: string;
-  zone: string;
-  quartier: string;
-  nomUtilisateur: string;
-  dateVisite: string; // format: YYYY-MM-DD
-  statut: 'FAIT' | 'NON_FAIT';
-}
 
-const mockVisites : Visite[] = [
-  {
-    id: 1,
-    nomClient: "Entreprise Rasoanaivo",
-    categorieClient: "VIP",
-    zone: "Centre Ville",
-    quartier: "Analakely",
-    nomUtilisateur: "Rakoto",
-    dateVisite: "2026-05-20",
-    statut: "NON_FAIT",
-  },
-  {
-    id: 2,
-    nomClient: "Société Andrianina",
-    categorieClient: "Standard",
-    zone: "Nord",
-    quartier: "Ankorondrano",
-    nomUtilisateur: "Rabe",
-    dateVisite: "2026-05-22",
-    statut: "NON_FAIT",
-  },
-  {
-    id: 3,
-    nomClient: "Commerce Tiana",
-    categorieClient: "Premium",
-    zone: "Sud",
-    quartier: "Isoraka",
-    nomUtilisateur: "Rasoa",
-    dateVisite: "2026-05-23",
-    statut: "FAIT",
-  },
-  {
-    id: 4,
-    nomClient: "Entreprise Hery",
-    categorieClient: "Standard",
-    zone: "Est",
-    quartier: "Ivandry",
-    nomUtilisateur: "Rakoto",
-    dateVisite: "2026-05-18",
-    statut: "NON_FAIT",
-  },
-  {
-    id: 5,
-    nomClient: "Boutique Lova",
-    categorieClient: "VIP",
-    zone: "Ouest",
-    quartier: "67 Ha",
-    nomUtilisateur: "Rabe",
-    dateVisite: "2026-05-22",
-    statut: "FAIT",
-  },
-];
+  idclient: number;
+  idutilisateur: number;
+  idcategorie: number;
+  idtype: number | null;
+
+  date: string; // "2026-04-17 00:00:00"
+
+  statut: number;
+  type: number;
+
+  object: string | null;
+
+  created_at: string | null;
+  updated_at: string | null;
+
+  client: {
+    id: number;
+    nom: string;
+
+    latitude: string;
+    longitude: string;
+
+    zone: string;
+    quartier: string;
+
+    idagence: number;
+    idcategorie: number;
+
+    categorie_client: {
+      id: number;
+      intitule: string;
+    };
+  };
+
+  categorie_visite: {
+    id: number;
+    intitule: string;
+  };
+
+  type_visite: {
+    id: number;
+    nom: string;
+  } | null;
+}
 
 export default function Planning() {
   const [visites, setVisites] = useState<Visite[]>([]);
+  const router = useRouter();
+const [page, setPage] = useState(1);
+const [loadingMore, setLoadingMore] = useState(false);
+const [hasMore, setHasMore] = useState(true);
 
-  useEffect(() => {
-    setVisites(mockVisites);
-  }, []);
-
-//   useEffect(() => {
-//     fetch('https://allapps.alphaciment.com/crm_back/api/visites')
-//       .then(res => res.json())
-//       .then(json => setVisites(Array.isArray(json) ? json : []))
-//       .catch(err => console.log(err));
-//   }, []);
+useEffect(() => {
+  fetch('https://allapps.alphaciment.com/crm_back/api/visiteByIdUtilisateur/3')
+    .then(res => res.json())
+    .then(json => {
+      if (Array.isArray(json)) {
+        const sorted = [...json].sort((a, b) =>
+          new Date(b.date).getTime() - new Date(a.date).getTime()
+        );
+        setVisites(sorted);
+      } else {
+        setVisites([]);
+      }
+    })
+    .catch(err => console.log(err));
+}, []);
 
   const today = new Date().toISOString().split('T')[0];
 
   const getColor = (v: Visite) => {
-    if (v.statut === 'FAIT') return '#2ecc71'; // vert
+    if (v.statut === 1) return '#2ecc71'; // vert
 
-    if (v.dateVisite < today) return '#e74c3c'; // rouge
+    if (v.date < today) return '#e74c3c'; // rouge
 
-    if (v.dateVisite === today) return '#f39c12'; // orange
+    if (v.date === today || v.date > today) return '#f39c12'; // orange
 
     return '#bdc3c7';
   };
 
   const renderItem = ({ item }: { item: Visite }) => (
-    <View style={[styles.card, { borderLeftColor: getColor(item) }]}>
-      <Text style={styles.title}>{item.nomClient}</Text>
+    <TouchableOpacity
+      activeOpacity={0.8}
+      onPress={() =>
+        router.push({
+          pathname: '/rapportB2B',
+          params: {
+            idVisite: item.id.toString(),
+          },
+        })
+      }
+    >
+      <View
+        style={[
+          styles.card,
+          { borderLeftColor: getColor(item) },
+        ]}
+      >
+        <Text style={styles.title}>
+          {item.client.nom}
+        </Text>
 
-      <Text>Catégorie : {item.categorieClient}</Text>
-      <Text>Zone : {item.zone}</Text>
-      <Text>Quartier : {item.quartier}</Text>
-      <Text>Utilisateur : {item.nomUtilisateur}</Text>
-      <Text>Date : {item.dateVisite}</Text>
+        <Text>
+          {item.client.categorie_client.intitule}
+        </Text>
 
-      <Text style={{ color: getColor(item), fontWeight: 'bold' }}>
-        {item.statut === 'FAIT' ? 'VISITE FAITE' : 'EN ATTENTE'}
-      </Text>
-    </View>
+        <Text>Zone : {item.client.zone}</Text>
+
+        <Text>
+          Quartier : {item.client.quartier}
+        </Text>
+
+        {/* <Text>
+          Utilisateur : {item.client.nom}
+        </Text> */}
+
+        <Text>
+          Date : {item.date.split(' ')[0]}
+        </Text>
+
+        <Text
+          style={{
+            color: getColor(item),
+            fontWeight: 'bold',
+          }}
+        >
+          {item.statut === 1
+            ? 'VISITE FAITE'
+            : 'EN ATTENTE'}
+        </Text>
+      </View>
+    </TouchableOpacity>
   );
 
   return (

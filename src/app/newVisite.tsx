@@ -10,17 +10,11 @@ import {
   Modal,
   Pressable,
   Platform,
+  Alert,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-/* LISTES */
-const natureVisiteList = ['Prospection', 'Suivi', 'Réclamation'];
-const typeVisiteList = ['Physique', 'Téléphonique', 'Visio'];
-const typeClientList = ['Particulier', 'Entreprise', 'Revendeur'];
-const agenceList = ['Agence Centrale', 'Agence Nord', 'Agence Sud'];
-const acquereurList = ['Agent 1', 'Agent 2', 'Agent 3'];
 
-const clientsMock = ['Jumbo Score', 'TELMA', 'Orange', 'Star'];
 interface Client {
   id: number;
   nom: string;
@@ -54,7 +48,6 @@ interface CategorieVisite {
 
 export default function NewVisiteScreen() {
   /* STATES */
-  const [nature, setNature] = useState('');
   const [typeVisite, setTypeVisite] = useState<string>('');
   const [motifVisite, setMotifVisite] = useState<string>('');
   const [motifVisiteList, setMotifVisiteList] = useState<CategorieVisite[]>([]);
@@ -65,23 +58,23 @@ export default function NewVisiteScreen() {
   const [agenceClientList, setAgenceClientList] = useState<Agence[]>([]);
   const [acquisiteur, setAcquisiteur] = useState('');
   const [client, setClient] = useState('');
-  const [dateVisite, setDateVisite] = useState('');
   const [objectif, setObjectif] = useState('');
-const [error, setError] = useState('');
+  const [error, setError] = useState('');
   const [showClientList, setShowClientList] = useState(false);
+
+  const [motifVisiteId, setMotifVisiteId] =
+  useState<number | null>(null);
+
+  const [typeVisiteId, setTypeVisiteId] =
+  useState<number | null>(null);
 
   /* MODALS */
   const [modalNature, setModalNature] = useState(false);
   const [modalTypeVisite, setModalTypeVisite] = useState(false);
   const [modalTypeClient, setModalTypeClient] = useState(false);
   const [modalAgence, setModalAgence] = useState(false);
-  const [modalAcquisiteur, setModalAcquisiteur] = useState(false);
 
   /* AUTRE INPUTS */
-  const [otherNature, setOtherNature] = useState('');
-  const [otherTypeVisite, setOtherTypeVisite] = useState('');
-  const [otherTypeClient, setOtherTypeClient] = useState('');
-  const [otherAgence, setOtherAgence] = useState('');
 
   const [date, setDate] = useState(new Date());
   const [showPicker, setShowPicker] = useState(false);
@@ -140,22 +133,105 @@ useEffect(() => {
     }, []);
 
 
-const filteredClients = dataClient.filter((c: Client) =>
-  c.nom?.toLowerCase().includes(client.toLowerCase())
-);
+    const filteredClients = dataClient.filter((c: Client) => {
+        const matchNom =
+            c.nom?.toLowerCase().includes(client.toLowerCase());
 
-  const handleSubmit = () => {
-    console.log({
-      nature,
-      typeVisite,
-      typeClient,
-      agenceClient,
-      acquisiteur,
-      client,
-      dateVisite: date.toISOString(),
-      objectif,
+        const matchType =
+            !typeClientId || c.idcategorie === typeClientId;
+
+        const matchAgence =
+            !agenceClientId || c.idagence === agenceClientId;
+
+        return matchNom && matchType && matchAgence;
     });
-  };
+
+    const formatDate = (date: Date) => {
+        const yyyy = date.getFullYear();
+        const mm = String(date.getMonth() + 1).padStart(2, '0');
+        const dd = String(date.getDate()).padStart(2, '0');
+        const hh = String(date.getHours()).padStart(2, '0');
+        const min = String(date.getMinutes()).padStart(2, '0');
+        const ss = String(date.getSeconds()).padStart(2, '0');
+
+        return `${yyyy}-${mm}-${dd} ${hh}:${min}:${ss}`;
+    };
+
+    const handleSubmit = async () => {
+        try {
+            setError('');
+
+            if (!clientId) {
+            setError('Veuillez sélectionner un client');
+            return;
+            }
+
+            if (!motifVisiteId) {
+            setError('Veuillez sélectionner une nature de visite');
+            return;
+            }
+
+            if (!typeVisiteId) {
+            setError('Veuillez sélectionner un type de visite');
+            return;
+            }
+
+            const body = {
+                idclient: clientId,
+                idutilisateur: 2,
+                idcategorie: motifVisiteId,
+                date: formatDate(date),
+                statut: 0,
+                type: 1,
+                idtype: typeVisiteId,
+                object: objectif, // ✅ CORRIGÉ (pas "object")
+            };
+
+            console.log('BODY:', body);
+
+            const response = await fetch(
+            'https://allapps.alphaciment.com/crm_back/api/visite',
+            {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                },
+                body: JSON.stringify(body),
+            }
+            );
+
+            const result = await response.json();
+
+            if (!response.ok) {
+            throw new Error(result.message || 'Erreur insertion visite');
+            }
+
+            Alert.alert('Succès', 'Visite enregistrée avec succès');
+
+            // reset
+            setClient('');
+            setClientId(null);
+
+            setAgenceClient('');
+            setAgenceClientId(null);
+
+            setMotifVisite('');
+            setMotifVisiteId(null);
+
+            setTypeVisite('');
+            setTypeVisiteId(null);
+
+            setTypeClient('');
+            setTypeClientId(null);
+
+            setObjectif('');
+            setDate(new Date());
+        } catch (err: any) {
+            console.error(err);
+            Alert.alert('Erreur', err.message);
+        }
+    };
 
 const onChangeDate = (event: any, selectedDate?: Date) => {
   if (selectedDate) {
@@ -164,124 +240,168 @@ const onChangeDate = (event: any, selectedDate?: Date) => {
   setShowPicker(false);
 };
 
-  /* GENERIC SELECT COMPONENT */
-  const renderSelect = (
-    label: string,
-    value: string,
-    setValue: any,
-    modalVisible: boolean,
-    setModalVisible: any,
-    data: string[],
-    otherValue: string,
-    setOtherValue: any
-  ) => (
-    <View style={styles.block}>
-      <Text style={styles.label}>{label}</Text>
-
-      <TouchableOpacity
-        style={styles.select}
-        onPress={() => setModalVisible(true)}
-      >
-        <Text>
-          {value || 'Sélectionner...'}
-        </Text>
-      </TouchableOpacity>
-
-      <Modal transparent visible={modalVisible} animationType="slide">
-        <Pressable
-          style={styles.overlay}
-          onPress={() => setModalVisible(false)}
-        >
-          <View style={styles.modal}>
-            {data.map((item) => (
-              <TouchableOpacity
-                key={item}
-                style={styles.item}
-                onPress={() => {
-                  setValue(item);
-                  setModalVisible(false);
-                }}
-              >
-                <Text>{item}</Text>
-              </TouchableOpacity>
-            ))}
-
-            {/* AUTRE */}
-            <TouchableOpacity
-              style={styles.item}
-              onPress={() => {
-                setValue('Autre');
-              }}
-            >
-              <Text>Autre...</Text>
-            </TouchableOpacity>
-
-            {value === 'Autre' && (
-              <TextInput
-                style={styles.input}
-                placeholder="Saisir autre valeur"
-                value={otherValue}
-                onChangeText={setOtherValue}
-              />
-            )}
-          </View>
-        </Pressable>
-      </Modal>
-    </View>
-  );
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Nouvelle visite</Text>
 
         {/* NATURE */}
-        {renderSelect(
-          'Nature visite',
-          motifVisite,
-          setMotifVisite,
-          modalNature,
-          setModalNature,
-          motifVisiteList.map(item => item.intitule), // ✔ string[]
-          otherNature,
-          setOtherNature
-        )}
+        <View style={styles.block}>
+            <Text style={styles.label}>Nature visite</Text>
+
+            <TouchableOpacity
+                style={styles.select}
+                onPress={() => setModalNature(true)}
+            >
+                <Text>
+                {motifVisite || 'Sélectionner...'}
+                </Text>
+            </TouchableOpacity>
+
+            <Modal
+                transparent
+                visible={modalNature}
+                animationType="slide"
+            >
+                <Pressable
+                style={styles.overlay}
+                onPress={() => setModalNature(false)}
+                >
+                <View style={styles.modal}>
+                    <ScrollView>
+                    {motifVisiteList.map((item) => (
+                        <TouchableOpacity
+                        key={item.id}
+                        style={styles.item}
+                        onPress={() => {
+                            setMotifVisite(item.intitule);
+                            setMotifVisiteId(item.id);
+                            setModalNature(false);
+                        }}
+                        >
+                        <Text>{item.intitule}</Text>
+                        </TouchableOpacity>
+                    ))}
+                    </ScrollView>
+                </View>
+                </Pressable>
+            </Modal>
+            </View>
 
         {/* TYPE VISITE */}
-        {renderSelect(
-          'Type visite',
-          typeVisite,
-          setTypeVisite,
-          modalTypeVisite,
-          setModalTypeVisite,
-          typeVisiteList.map(item => item.nom), // ✔ string[],
-          otherTypeVisite,
-          setOtherTypeVisite
-        )}
+        <View style={styles.block}>
+            <Text style={styles.label}>Type visite</Text>
+
+            <TouchableOpacity
+                style={styles.select}
+                onPress={() => setModalTypeVisite(true)}
+            >
+                <Text>
+                {typeVisite || 'Sélectionner...'}
+                </Text>
+            </TouchableOpacity>
+
+            <Modal
+                transparent
+                visible={modalTypeVisite}
+                animationType="slide"
+            >
+                <Pressable
+                style={styles.overlay}
+                onPress={() =>
+                    setModalTypeVisite(false)
+                }
+                >
+                <View style={styles.modal}>
+                    <ScrollView>
+                    {typeVisiteList.map((item) => (
+                        <TouchableOpacity
+                        key={item.id}
+                        style={styles.item}
+                        onPress={() => {
+                            setTypeVisite(item.nom);
+                            setTypeVisiteId(item.id);
+                            setModalTypeVisite(false);
+                        }}
+                        >
+                        <Text>{item.nom}</Text>
+                        </TouchableOpacity>
+                    ))}
+                    </ScrollView>
+                </View>
+                </Pressable>
+            </Modal>
+        </View>
 
         {/* TYPE CLIENT */}
-        {renderSelect(
-          'Type client',
-          typeClient,
-          setTypeClient,
-          modalTypeClient,
-          setModalTypeClient,
-          typeClientList.map(item => item.intitule),
-          otherTypeClient,
-          setOtherTypeClient
-        )}
+        <View style={styles.block}>
+            <Text style={styles.label}>Type client</Text>
+
+            <TouchableOpacity
+                style={styles.select}
+                onPress={() => setModalTypeClient(true)}
+            >
+                <Text>{typeClient || 'Sélectionner...'}</Text>
+            </TouchableOpacity>
+
+            <Modal transparent visible={modalTypeClient}>
+                <Pressable
+                style={styles.overlay}
+                onPress={() => setModalTypeClient(false)}
+                >
+                <View style={styles.modal}>
+                    {typeClientList.map((item) => (
+                    <TouchableOpacity
+                        key={item.id}
+                        style={styles.item}
+                        onPress={() => {
+                        setTypeClient(item.intitule);
+                        setTypeClientId(item.id); // important
+                        setModalTypeClient(false);
+                        }}
+                    >
+                        <Text>{item.intitule}</Text>
+                    </TouchableOpacity>
+                    ))}
+                </View>
+                </Pressable>
+            </Modal>
+            </View>
 
         {/* AGENCE CLIENT */}
-        {renderSelect(
-          'Agence client',
-          agenceClient,
-          setAgenceClient,
-          modalAgence,
-          setModalAgence,
-          agenceClientList.map(item => item.intitule),
-          otherAgence,
-          setOtherAgence
-        )}
+        <View style={styles.block}>
+            <Text style={styles.label}>Agence client</Text>
+
+            <TouchableOpacity
+                style={styles.select}
+                onPress={() => setModalAgence(true)}
+            >
+                <Text>{agenceClient || 'Sélectionner...'}</Text>
+            </TouchableOpacity>
+
+            <Modal transparent visible={modalAgence}>
+                <Pressable
+                style={styles.overlay}
+                onPress={() => setModalAgence(false)}
+                >
+                <View style={styles.modal}>
+                    {agenceClientList.map((item) => (
+                    <TouchableOpacity
+                        key={item.id}
+                        style={styles.item}
+                        onPress={() => {
+                        setAgenceClient(item.intitule);
+                        setAgenceClientId(item.id); // important
+                        setModalAgence(false);
+                        }}
+                    >
+                        <Text>{item.intitule}</Text>
+                    </TouchableOpacity>
+                    ))}
+                </View>
+                </Pressable>
+            </Modal>
+            </View>
 
         {/* CLIENT AUTOCOMPLETE */}
         <Text style={styles.label}>Client</Text>
@@ -297,7 +417,7 @@ const onChangeDate = (event: any, selectedDate?: Date) => {
 
         {showClientList && client.length > 0 && (
           <View style={styles.suggestion}>
-            {filteredClients.map((c: Client) => (
+            {filteredClients.slice(0, 10).map((c: Client) => (
                 <TouchableOpacity
                 key={c.id}
                 onPress={() => {
@@ -313,7 +433,7 @@ const onChangeDate = (event: any, selectedDate?: Date) => {
         )}
 
         {/* ACQUISITEUR (LISTE SIMPLE) */}
-        <View style={styles.block}>
+        {/* <View style={styles.block}>
           <Text style={styles.label}>Acquisiteur</Text>
 
           {acquereurList.map((a) => (
@@ -328,7 +448,7 @@ const onChangeDate = (event: any, selectedDate?: Date) => {
               <Text>{a}</Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </View> */}
 
         {/* DATE */}
         <View style={styles.block}>

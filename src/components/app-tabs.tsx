@@ -13,6 +13,7 @@ export default function AppTabs() {
       backgroundColor={colors.background}
       indicatorColor={colors.backgroundElement}
       labelStyle={{ selected: { color: colors.text } }}>
+        
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Home</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
@@ -21,28 +22,6 @@ export default function AppTabs() {
         />
       </NativeTabs.Trigger>
 
-      {/* <NativeTabs.Trigger name="explore">
-        <NativeTabs.Trigger.Label>Explore</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          src={require('@/assets/images/tabIcons/explore.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger> */}
-
-      {/* <NativeTabs.Trigger name="login">
-        <NativeTabs.Trigger.Label>Connexion</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          // src={require('@/assets/images/tabIcons/login.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger> */}
-      {/* <NativeTabs.Trigger name="formulaire">
-        <NativeTabs.Trigger.Label>Formulaire</NativeTabs.Trigger.Label>
-        <NativeTabs.Trigger.Icon
-          // src={require('@/assets/images/tabIcons/formulaire.png')}
-          renderingMode="template"
-        />
-      </NativeTabs.Trigger> */}
       <NativeTabs.Trigger name="newClient">
         <NativeTabs.Trigger.Label>Nouveau Client </NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
@@ -50,6 +29,7 @@ export default function AppTabs() {
           renderingMode="template"
         />
       </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="newVisite">
         <NativeTabs.Trigger.Label>Nouvelle Visite </NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
@@ -57,6 +37,7 @@ export default function AppTabs() {
           renderingMode="template"
         />
       </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="planning">
         <NativeTabs.Trigger.Label>Planning</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
