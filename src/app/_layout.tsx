@@ -1,37 +1,32 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import React from 'react';
-import { useColorScheme } from 'react-native';
-
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
-
-import * as Updates from 'expo-updates';
-import { useEffect } from 'react';
 import { Stack } from 'expo-router';
+import { ThemeProvider, DarkTheme, DefaultTheme } from '@react-navigation/native';
+import { useColorScheme } from 'react-native';
+import React, { useEffect } from 'react';
+import * as Updates from 'expo-updates';
 
-export default function TabLayout() {
+export default function RootLayout() {
+  const colorScheme = useColorScheme();
+
   useEffect(() => {
     async function checkUpdate() {
-      if (!__DEV__) { // Seulement en production/preview, pas en dev
-        try {
-          const update = await Updates.checkForUpdateAsync();
-          if (update.isAvailable) {
-            await Updates.fetchUpdateAsync();
-            await Updates.reloadAsync(); // Redémarre avec la nouvelle version
-          }
-        } catch (e) {
-          console.log('Erreur update:', e);
+      if (!__DEV__) {
+        const update = await Updates.checkForUpdateAsync();
+        if (update.isAvailable) {
+          await Updates.fetchUpdateAsync();
+          await Updates.reloadAsync();
         }
       }
     }
     checkUpdate();
   }, []);
 
-  const colorScheme = useColorScheme();
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="rapportB2B" />
+        <Stack.Screen name="resultB2B" />
+      </Stack>
     </ThemeProvider>
   );
 }

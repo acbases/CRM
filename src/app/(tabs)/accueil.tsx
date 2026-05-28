@@ -105,7 +105,7 @@ export default function RapportB2BScreen() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch(`https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`)
+    fetch(`https://allapps.alphaciment.com/crm_back/api/visite/28`)
       .then(res => res.json())
       .then(json => setVisite(json))
       .catch(err => setError(err.message))
@@ -114,7 +114,7 @@ export default function RapportB2BScreen() {
 
   useEffect(() => {
     if (visite) {
-      fetch(`https://allapps.alphaciment.com/crm_back/api/correspondantClientByIdClient/${visite.client.id}`)
+      fetch(`https://allapps.alphaciment.com/crm_back/api/correspondantClientByIdClient/23`)
         .then(res => res.json())
         .then(json => setCorrespondant(Array.isArray(json) ? json : []))
         .catch(err => setError(err.message))
@@ -228,7 +228,7 @@ const openCamera = async () => {
 
       const formData = new FormData();
 
-      formData.append('idvisite', String(idVisite));
+      formData.append('idvisite', String(28));
       formData.append('description', description);
       formData.append('action_a_faire', actionAFaire);
       formData.append(
@@ -242,8 +242,8 @@ const openCamera = async () => {
           : '');
 
       // IMAGE FILE
-      if (photo) {
       const filename = photo.split('/').pop() || 'photo.jpg';
+
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : `image/jpeg`;
 
@@ -252,7 +252,6 @@ const openCamera = async () => {
         name: filename,
         type,
       } as any);
-    }
 
       const response = await fetch(
         'https://allapps.alphaciment.com/crm_back/api/rapportb2b',
@@ -266,26 +265,17 @@ const openCamera = async () => {
         }
       );
 
-      const data = await response.json().catch(async () => {
-  const text = await response.text();
-  console.log('RAW ERROR TEXT:', text);
-  return { raw: text };
-});
+      const data = await response.json();
 
-console.log('STATUS:', response.status);
-console.log('DATA:', data);
+      if (!response.ok) {
+        console.log('ERROR API:', data);
+        Alert.alert('Erreur', 'Échec enregistrement');
+        return;
+      }
 
-if (!response.ok) {
-  Alert.alert(
-    'Erreur API',
-    JSON.stringify(data)
-  );
-  return;
-}
+      console.log('SUCCESS:', data);
 
-console.log('SUCCESS:', data);
-
-Alert.alert('Succès', 'Rapport enregistré');
+      Alert.alert('Succès', 'Rapport enregistré');
 
       // reset form
       setDescription('');
@@ -358,8 +348,8 @@ Alert.alert('Succès', 'Rapport enregistré');
           <Text style={styles.label}>
             Description
           </Text>
-          <Text>Visite ID : {idVisite}</Text>
-          <Text>Client ID : {visite?.client?.id}</Text>
+          <Text>Visite ID : 28</Text>
+          <Text>Client ID : 23</Text>
           <TextInput
             style={styles.textArea}
             multiline

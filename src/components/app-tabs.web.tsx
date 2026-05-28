@@ -37,6 +37,9 @@ export default function AppTabs() {
           <TabTrigger name="newClient" href="/newClient" asChild>
             <TabButton>Nouveau Client </TabButton>
           </TabTrigger>
+          {/* <TabTrigger name="accueil" href="/accueil" asChild>
+            <TabButton>Rapport B2B</TabButton>
+          </TabTrigger> */}
           <TabTrigger name="newVisite" href="/newVisite" asChild>
             <TabButton>Nouvelle Visite </TabButton>
           </TabTrigger>

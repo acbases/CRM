@@ -7,6 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 
+
 export default function HomeScreen() {
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);

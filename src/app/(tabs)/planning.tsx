@@ -5,7 +5,7 @@ import { TouchableOpacity } from 'react-native';
 
 
 
-export interface Visite {
+interface Visite {
   id: number;
 
   idclient: number;
@@ -91,14 +91,19 @@ useEffect(() => {
   const renderItem = ({ item }: { item: Visite }) => (
     <TouchableOpacity
       activeOpacity={0.8}
-      onPress={() =>
+      onPress={() => {
+        console.log('Visite sélectionnée:', item.id);
+        // const route =
+        //   item.statut === 0
+        //     ? '../rapportB2B'
+        //     : '../resultB2B';
         router.push({
           pathname: '/rapportB2B',
           params: {
             idVisite: item.id.toString(),
           },
-        })
-      }
+        });
+      }}
     >
       <View
         style={[

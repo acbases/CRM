@@ -15,6 +15,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 
+
 interface Client {
   id: number;
   nom: string;
@@ -178,10 +179,10 @@ useEffect(() => {
 
             const body = {
                 idclient: clientId,
-                idutilisateur: 2,
+                idutilisateur: 3,
                 idcategorie: motifVisiteId,
                 date: formatDate(date),
-                statut: 0,
+                statut: 1,
                 type: 1,
                 idtype: typeVisiteId,
                 object: objectif, // ✅ CORRIGÉ (pas "object")
