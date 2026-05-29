@@ -1,21 +1,21 @@
-import React, {useEffect, useState } from 'react';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
+import { useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
+  Alert,
+  Image,
+  Modal,
+  Platform,
+  Pressable,
   SafeAreaView,
-  View,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  StyleSheet,
-  Image,
-  Platform,
-  ScrollView,
-  Alert,
-  Modal,
-  Pressable,
+  View,
 } from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { useLocalSearchParams } from 'expo-router';
 
  interface Correspondant {
   id: number;
@@ -161,7 +161,7 @@ const pickImage = async () => {
           mediaTypes:
             ImagePicker.MediaTypeOptions.Images,
           allowsEditing: true,
-          quality: 0.8,
+          quality: 0.3,
         });
 
       if (!result.canceled) {
@@ -178,7 +178,8 @@ const openCamera = async () => {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        quality: 0.8,
+        aspect: [4, 3],
+        quality: 0.3,
       });
 
       if (!result.canceled) {
@@ -197,7 +198,7 @@ const openCamera = async () => {
 
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
-      quality: 0.8,
+      quality: 0.3,
     });
 
     if (!result.canceled) {
@@ -219,30 +220,31 @@ const openCamera = async () => {
     setShowPicker(false);
   };
 
-  const handleSubmit = async () => {
-    try {
-      if (!photo) {
-        Alert.alert('Erreur', 'Veuillez ajouter une photo');
-        return;
-      }
+const handleSubmit = async () => {
+  try {
+    if (!photo) {
+      Alert.alert('Erreur', 'Veuillez ajouter une photo');
+      return;
+    }
 
-      const formData = new FormData();
+    const formData = new FormData();
 
-      formData.append('idvisite', String(idVisite));
-      formData.append('description', description);
-      formData.append('action_a_faire', actionAFaire);
-      formData.append(
-        'prochaine_visite',
-        dateRdv.toISOString().split('T')[0]
-      );
-      // ⚠️ adapte selon ton app
-      formData.append('idcorrespondant',
-        selectedCorrespondant
-          ? String(selectedCorrespondant.correspondant.id)
-          : '');
+    formData.append('idvisite', String(idVisite));
+    formData.append('description', description);
+    formData.append('action_a_faire', actionAFaire);
+    formData.append(
+      'prochaine_visite',
+      dateRdv.toISOString().split('T')[0]
+    );
 
-      // IMAGE FILE
-      if (photo) {
+    formData.append(
+      'idcorrespondant',
+      selectedCorrespondant
+        ? String(selectedCorrespondant.correspondant.id)
+        : ''
+    );
+
+    if (photo) {
       const filename = photo.split('/').pop() || 'photo.jpg';
       const match = /\.(\w+)$/.exec(filename);
       const type = match ? `image/${match[1]}` : `image/jpeg`;
@@ -254,51 +256,89 @@ const openCamera = async () => {
       } as any);
     }
 
-      const response = await fetch(
-        'https://allapps.alphaciment.com/crm_back/api/rapportb2b',
+    // 1️⃣ ENREGISTREMENT RAPPORT
+    const response = await fetch(
+      'https://allapps.alphaciment.com/crm_back/api/rapportB2B',
+      {
+        method: 'POST',
+        body: formData,
+        headers: {
+          Accept: 'application/json',
+        },
+      }
+    );
+
+    const text = await response.text();
+
+    console.log('STATUS:', response.status);
+    console.log('RAW RESPONSE:', text);
+
+    let data: any;
+
+    try {
+      data = JSON.parse(text);
+    } catch {
+      data = { raw: text };
+    }
+
+    if (!response.ok) {
+      Alert.alert('Erreur API', JSON.stringify(data));
+      return;
+    }
+
+    Alert.alert('Succès', 'Rapport enregistré');
+
+    // 2️⃣ UPDATE STATUT VISITE
+    try {
+      const updateResponse = await fetch(
+        `https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`,
         {
-          method: 'POST',
-          body: formData,
+          method: 'PUT', // ⚠️ change en PATCH si ton backend le demande
           headers: {
-            'Accept': 'application/json',
-            // ❌ NE PAS mettre Content-Type manuellement
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
           },
+          body: JSON.stringify({
+            statut: 1, // ex: 1 = visite réalisée
+          }),
         }
       );
 
-      const data = await response.json().catch(async () => {
-  const text = await response.text();
-  console.log('RAW ERROR TEXT:', text);
-  return { raw: text };
-});
+      const updateText = await updateResponse.text();
 
-console.log('STATUS:', response.status);
-console.log('DATA:', data);
+      let updateData: any;
 
-if (!response.ok) {
-  Alert.alert(
-    'Erreur API',
-    JSON.stringify(data)
-  );
-  return;
-}
+      try {
+        updateData = JSON.parse(updateText);
+      } catch {
+        updateData = { raw: updateText };
+      }
 
-console.log('SUCCESS:', data);
+      console.log('VISITE UPDATE:', updateData);
 
-Alert.alert('Succès', 'Rapport enregistré');
-
-      // reset form
-      setDescription('');
-      setActionAFaire('');
-      setPhoto(null);
-      setDateRdv(new Date());
-
-    } catch (error) {
-      console.log('SUBMIT ERROR:', error);
-      Alert.alert('Erreur', 'Erreur serveur');
+      if (!updateResponse.ok) {
+        Alert.alert('Erreur update visite', JSON.stringify(updateData));
+      }
+    } catch (err) {
+      console.log('UPDATE VISITE ERROR:', err);
     }
-  };
 
+    // reset form
+    setDescription('');
+    setActionAFaire('');
+    setPhoto(null);
+    setDateRdv(new Date());
+    setSelectedCorrespondant(null);
+
+  } catch (error) {
+    console.log('SUBMIT ERROR:', error);
+
+    const message =
+      error instanceof Error ? error.message : 'Erreur inconnue';
+
+    Alert.alert('Erreur', 'Erreur serveur: ' + message);
+  }
+};
 
   return (
     <SafeAreaView style={styles.container}>

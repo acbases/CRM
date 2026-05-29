@@ -2,15 +2,45 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
-
 interface Rapport {
   id: number;
-  description: string;
-  actionAFaire: string;
-  photo: string | null;
-  prochainRendezVous: string;
   idvisite: number;
+  description: string;
+  action_a_faire: string | null;
+  sary: string | null;
+  prochaine_visite: string | null;
+  idcorrespondant: number;
+
+  visite: {
+    id: number;
+    idclient: number;
+    idutilisateur: number;
+    idcategorie: number;
+    date: string;
+    statut: number;
+    type: number;
+    idtype: number | null;
+    created_at: string | null;
+    updated_at: string | null;
+    object: string | null;
+  };
+
+  correspondant: {
+    id: number;
+    nom: string;
+    poste: string;
+    contact: string;
+  };
 }
+
+// interface Rapport {
+//   id: number;
+//   description: string;
+//   actionAFaire: string;
+//   photo: string | null;
+//   prochainRendezVous: string;
+//   idvisite: number;
+// }
 
 interface Visite{
   id: number;
@@ -89,28 +119,44 @@ export default function ResultB2B() {
   const [visite, setVisite] = useState<Visite | null>(null);
   const [loading, setLoading] = useState(true);
 
+useEffect(() => {
+  setLoading(true);
+
+  fetch(`https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`)
+    .then(res => res.json())
+    .then(json => setVisite(json))
+    .catch(err => console.log(err))
+    .finally(() => setLoading(false));
+    console.log('VISITE INFO:', visite);
+}, [idVisite]);
 
 
-  useEffect(() => {
-    fetch('https://allapps.alphaciment.com/crm_back/api/client/18')
-      .then(res => res.json())
-      .then(json => setClients(json))
-      .catch(err => console.log(err));
-  }, []);
+useEffect(() => {
+  if (!visite?.idclient) return;
 
-  useEffect(() => {
-    fetch('https://allapps.alphaciment.com/crm_back/api/visite/1')
-      .then(res => res.json())
-      .then(json => setVisite(json))
-      .catch(err => console.log(err));
-  }, []);
+  setLoading(true);
 
-  useEffect(() => {
-    fetch('https://allapps.alphaciment.com/crm_back/api/client/18')
-      .then(res => res.json())
-      .then(json => setRapport(json))       
-      .catch(err => console.log(err));
-  }, []);
+  fetch(`https://allapps.alphaciment.com/crm_back/api/client/${visite.idclient}`)
+    .then(res => res.json())
+    .then(json => setClients(json))
+    .catch(err => console.log(err))
+    .finally(() => setLoading(false));
+    console.log('CLIENT INFO:', clients);
+}, [visite]);
+
+
+
+useEffect(() => {
+  setLoading(true);
+
+  fetch(`https://allapps.alphaciment.com/crm_back/api/getRapportB2BByIdVisite/${idVisite}`)
+    .then(res => res.json())
+    .then(json => setRapport(Array.isArray(json) ? json[0] : json))
+    .catch(err => console.log(err))
+    .finally(() => setLoading(false));
+    console.log('RAPPORT B2B:', rapport);
+
+}, [idVisite]);
 
   if (loading) {
     return (
@@ -152,16 +198,16 @@ export default function ResultB2B() {
       {/* ACTION */}
       <View style={styles.card}>
         <Text style={styles.title}>Action à faire</Text>
-        <Text>{rapport?.actionAFaire}</Text>
+        <Text>{rapport?.action_a_faire}</Text>
       </View>
 
       {/* PHOTO */}
       <View style={styles.card}>
         <Text style={styles.title}>Photo</Text>
 
-        {rapport?.photo ? (
+        {rapport?.sary ? (
           <Image
-            source={{ uri: rapport.photo }}
+            source={{ uri: rapport.sary }}
             style={styles.image}
           />
         ) : (
@@ -172,7 +218,7 @@ export default function ResultB2B() {
       {/* RDV */}
       <View style={styles.card}>
         <Text style={styles.title}>Prochain rendez-vous</Text>
-        <Text>{rapport?.prochainRendezVous}</Text>
+        <Text>{rapport?.prochaine_visite}</Text>
       </View>
 
     </ScrollView>

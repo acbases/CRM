@@ -182,7 +182,7 @@ useEffect(() => {
                 idutilisateur: 3,
                 idcategorie: motifVisiteId,
                 date: formatDate(date),
-                statut: 1,
+                statut: 0,
                 type: 1,
                 idtype: typeVisiteId,
                 object: objectif, // ✅ CORRIGÉ (pas "object")

@@ -280,6 +280,24 @@ export default function NewClientScreen() {
 
       setSubmitted(true);
 
+      setNom('');
+      setLatitude('');
+      setLongitude('');
+      setZone('');
+      setQuartier('');
+
+      setAgenceId(null);
+      setAgence('');
+      setCategorieId(null);
+      setCategorie('');
+
+
+      // reset fournisseurs
+      setFournisseurs([]);
+
+      // reset erreurs
+      setError('');
+
       setTimeout(() => {
         setShowCorrespondant(true);
       }, 500);

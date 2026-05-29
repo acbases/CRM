@@ -93,12 +93,12 @@ useEffect(() => {
       activeOpacity={0.8}
       onPress={() => {
         console.log('Visite sélectionnée:', item.id);
-        // const route =
-        //   item.statut === 0
-        //     ? '../rapportB2B'
-        //     : '../resultB2B';
+        const route =
+          item.statut === 0
+            ? '/rapportB2B'
+            : '/resultB2B';
         router.push({
-          pathname: '/rapportB2B',
+          pathname: route,
           params: {
             idVisite: item.id.toString(),
           },
