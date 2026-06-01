@@ -5,59 +5,138 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
+
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
+import { useRouter,useLocalSearchParams } from 'expo-router';
 
 export default function ScanScreen() {
   const router = useRouter();
+  const { idVisite } = useLocalSearchParams();
 
-  const [permission, requestPermission] =
-    useCameraPermissions();
+  const [permission, requestPermission] = useCameraPermissions();
 
   const [scanned, setScanned] = useState(false);
-  const [scannedData, setScannedData] =
-    useState<string>('');
+  const [loadingLocation, setLoadingLocation] = useState(true);
 
+  const [userLocation, setUserLocation] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
+
+  // ===================== PERMISSIONS =====================
   useEffect(() => {
     if (!permission?.granted) {
       requestPermission();
     }
+    initLocation();
   }, []);
 
-  const handleBarCodeScanned = ({
-    data,
-  }: {
-    data: string;
-  }) => {
+  // ===================== GPS =====================
+  const initLocation = async () => {
+    try {
+      setLoadingLocation(true);
+
+      const { status } =
+        await Location.requestForegroundPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert('Erreur', 'Permission GPS refusée');
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      setUserLocation({
+        latitude: loc.coords.latitude,
+        longitude: loc.coords.longitude,
+      });
+    } catch (err) {
+      console.log(err);
+      Alert.alert('Erreur', 'Impossible de récupérer GPS');
+    } finally {
+      setLoadingLocation(false);
+    }
+  };
+
+  // ===================== DISTANCE =====================
+  const getDistance = (
+    lat1: number,
+    lon1: number,
+    lat2: number,
+    lon2: number
+  ) => {
+    const R = 6371e3;
+    const toRad = (v: number) => (v * Math.PI) / 180;
+
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) *
+        Math.cos(toRad(lat2)) *
+        Math.sin(dLon / 2) *
+        Math.sin(dLon / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c;
+  };
+
+  // ===================== SCAN QR =====================
+  const handleBarCodeScanned = async ({ data }: { data: string }) => {
     if (scanned) return;
 
     setScanned(true);
-    setScannedData(data);
 
-    Alert.alert(
-      'QR Code détecté',
-      `Valeur : ${data}`,
-      [
-        {
-          text: 'Scanner encore',
-          onPress: () => setScanned(false),
-        },
-        {
-          text: 'OK',
-        },
-      ]
-    );
+    try {
+      const qr = JSON.parse(data);
 
-    console.log('QR DATA:', data);
+      if (!userLocation) {
+        Alert.alert('Erreur', 'GPS non disponible');
+        setScanned(false);
+        return;
+      }
 
-    // Exemple navigation
-    // router.push({
-    //   pathname: '/detail',
-    //   params: { qr: data },
-    // });
+      const distance = getDistance(
+        userLocation.latitude,
+        userLocation.longitude,
+        qr.latitude,
+        qr.longitude
+      );
+
+      console.log('Distance:', distance);
+
+      if (distance <= 50) {
+        Alert.alert('OK', 'Client validé');
+
+        router.push({
+          pathname: '/rapportRetail',
+          params: {
+            idVisite,
+          },
+        });
+      } else {
+        Alert.alert(
+          'Hors zone',
+          `Vous êtes à ${Math.round(distance)}m du client`
+        );
+
+        setScanned(false);
+      }
+    } catch (err) {
+      console.log(err);
+      Alert.alert('Erreur', 'QR code invalide');
+      setScanned(false);
+    }
   };
 
+  // ===================== PERMISSION CAMERA =====================
   if (!permission) {
     return (
       <View style={styles.center}>
@@ -69,9 +148,7 @@ export default function ScanScreen() {
   if (!permission.granted) {
     return (
       <View style={styles.center}>
-        <Text style={styles.permissionText}>
-          Permission caméra refusée
-        </Text>
+        <Text>Permission caméra refusée</Text>
 
         <TouchableOpacity
           style={styles.button}
@@ -85,6 +162,19 @@ export default function ScanScreen() {
     );
   }
 
+  // ===================== LOADING GPS =====================
+  if (loadingLocation) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator size="large" color="#d71f27" />
+        <Text style={{ marginTop: 10 }}>
+          Récupération position...
+        </Text>
+      </View>
+    );
+  }
+
+  // ===================== UI =====================
   return (
     <View style={styles.container}>
       <CameraView
@@ -93,52 +183,37 @@ export default function ScanScreen() {
           barcodeTypes: ['qr'],
         }}
         onBarcodeScanned={
-          scanned
-            ? undefined
-            : handleBarCodeScanned
+          scanned ? undefined : handleBarCodeScanned
         }
       />
 
-      {/* Overlay */}
       <View style={styles.overlay}>
         <Text style={styles.title}>
-          Scanner un QR Code
+          Scanner QR Client
         </Text>
 
         <View style={styles.scanBox} />
 
         <Text style={styles.subtitle}>
-          Placez le QR code dans le cadre
+          Placez le QR dans le cadre
         </Text>
       </View>
 
-      {scannedData !== '' && (
-        <View style={styles.resultContainer}>
-          <Text style={styles.resultTitle}>
-            Dernier scan :
+      {scanned && (
+        <TouchableOpacity
+          style={styles.resetBtn}
+          onPress={() => setScanned(false)}
+        >
+          <Text style={{ color: '#fff' }}>
+            Scanner à nouveau
           </Text>
-
-          <Text style={styles.resultText}>
-            {scannedData}
-          </Text>
-
-          <TouchableOpacity
-            style={styles.scanAgainBtn}
-            onPress={() => {
-              setScanned(false);
-              setScannedData('');
-            }}
-          >
-            <Text style={styles.buttonText}>
-              Scanner à nouveau
-            </Text>
-          </TouchableOpacity>
-        </View>
+        </TouchableOpacity>
       )}
     </View>
   );
 }
 
+// ===================== STYLE =====================
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -149,13 +224,19 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 20,
+    padding: 20,
   },
 
-  permissionText: {
-    fontSize: 16,
-    marginBottom: 20,
-    textAlign: 'center',
+  button: {
+    marginTop: 10,
+    backgroundColor: '#d71f27',
+    padding: 12,
+    borderRadius: 10,
+  },
+
+  buttonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 
   overlay: {
@@ -166,62 +247,30 @@ const styles = StyleSheet.create({
 
   title: {
     color: '#fff',
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: 'bold',
     marginBottom: 30,
   },
 
   subtitle: {
     color: '#fff',
     marginTop: 20,
-    fontSize: 15,
   },
 
   scanBox: {
-    width: 260,
-    height: 260,
+    width: 250,
+    height: 250,
     borderWidth: 3,
     borderColor: '#d71f27',
     borderRadius: 20,
-    backgroundColor: 'transparent',
   },
 
-  button: {
-    backgroundColor: '#d71f27',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 12,
-  },
-
-  buttonText: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-
-  resultContainer: {
+  resetBtn: {
     position: 'absolute',
-    bottom: 40,
-    left: 20,
-    right: 20,
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 16,
-  },
-
-  resultTitle: {
-    fontWeight: '700',
-    marginBottom: 6,
-  },
-
-  resultText: {
-    color: '#444',
-    marginBottom: 12,
-  },
-
-  scanAgainBtn: {
+    bottom: 50,
+    alignSelf: 'center',
     backgroundColor: '#d71f27',
     padding: 12,
-    borderRadius: 12,
-    alignItems: 'center',
+    borderRadius: 10,
   },
 });

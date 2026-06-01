@@ -26,6 +26,8 @@ export default function RootLayout() {
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="rapportB2B" />
         <Stack.Screen name="resultB2B" />
+        <Stack.Screen name="rapportRetail" />
+        <Stack.Screen name="scan" />
       </Stack>
     </ThemeProvider>
   );

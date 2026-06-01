@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter,useFocusEffect } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
+
+
 
 
 
@@ -98,7 +100,7 @@ useEffect(() => {
             ? '/rapportB2B'
             : '/resultB2B';
         router.push({
-          pathname: route,
+          pathname: '/scan',
           params: {
             idVisite: item.id.toString(),
           },

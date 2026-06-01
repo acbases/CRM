@@ -16,6 +16,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 
  interface Correspondant {
   id: number;
@@ -103,6 +104,7 @@ export default function RapportB2BScreen() {
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
     fetch(`https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`)
@@ -329,6 +331,9 @@ const handleSubmit = async () => {
     setPhoto(null);
     setDateRdv(new Date());
     setSelectedCorrespondant(null);
+
+    // redirection
+    router.replace('/(tabs)/planning');
 
   } catch (error) {
     console.log('SUBMIT ERROR:', error);
