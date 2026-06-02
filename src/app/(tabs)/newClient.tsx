@@ -14,6 +14,8 @@ import {
   Modal,
   Pressable,
 } from 'react-native';
+import { KeyboardAwareScrollView }
+from 'react-native-keyboard-aware-scroll-view';
 
 interface CategorieClient {
   id: number;
@@ -320,13 +322,10 @@ export default function NewClientScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={
-          Platform.OS === 'ios'
-            ? 'padding'
-            : 'height'
-        }
+      <KeyboardAwareScrollView
+        enableOnAndroid={true}
+        extraScrollHeight={100}
+        keyboardShouldPersistTaps="handled"
       >
         <ScrollView
           contentContainerStyle={styles.container}
@@ -670,7 +669,7 @@ export default function NewClientScreen() {
             </View>
           )}
         </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
       <NewCorrespondant
         visible={showCorrespondant}
         idclient={idClientCreated}

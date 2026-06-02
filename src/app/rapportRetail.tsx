@@ -8,6 +8,8 @@ import {
   StyleSheet,
   Alert,
   SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
@@ -31,22 +33,24 @@ export default function RapportRetail() {
         const idClient = json.client.id;
 
         const prodRes = await fetch(
-          `https://allapps.alphaciment.com/crm_back/api/getProduits/${idClient}`
+          `https://allapps.alphaciment.com/crm_back/api/produits`
         );
 
         const prodData = await prodRes.json();
 
         setProduits(
-          prodData.map((p: any) => ({
-            id: p.id,
-            intitule: p.intitule,
-            prix_achat: '',
-            prix_vente_gros: '',
-            prix_vente_details: '',
-            cout_transport: '',
-            marge: '',
-            volume: '',
-          }))
+            prodData.map((p: any) => ({
+                id: p.id,
+                intitule: p.intitule,
+                selected: false,
+
+                prix_achat: '',
+                prix_vente_gros: '',
+                prix_vente_details: '',
+                cout_transport: '',
+                marge: '',
+                volume: '',
+            }))
         );
       })
       .catch(err => console.log(err));
@@ -54,7 +58,7 @@ export default function RapportRetail() {
 
   // ===================== GET PLV =====================
   useEffect(() => {
-    fetch(`https://allapps.alphaciment.com/crm_back/api/getPlvs`)
+    fetch(`https://allapps.alphaciment.com/crm_back/api/plvs`)
       .then(res => res.json())
       .then(setPlvs)
       .catch(err => console.log(err));
@@ -64,6 +68,12 @@ export default function RapportRetail() {
   const updateProduit = (index: number, field: string, value: string) => {
     const copy = [...produits];
     copy[index][field] = value;
+    setProduits(copy);
+  };
+
+  const toggleProduit = (index: number) => {
+    const copy = [...produits];
+    copy[index].selected = !copy[index].selected;
     setProduits(copy);
   };
 
@@ -100,26 +110,19 @@ export default function RapportRetail() {
   };
 
   // ===================== FILTER PRODUITS VALIDES =====================
-  const buildRefPrix = () => {
-    return produits
-      .filter(p =>
-        p.prix_achat ||
-        p.prix_vente_gros ||
-        p.prix_vente_details ||
-        p.cout_transport ||
-        p.marge ||
-        p.volume
-      )
-      .map(p => ({
-        idproduit: p.id,
-        prix_achat: p.prix_achat,
-        prix_vente_gros: p.prix_vente_gros,
-        prix_vente_details: p.prix_vente_details,
-        cout_transport: p.cout_transport,
-        marge: p.marge,
-        volume: p.volume,
-      }));
-  };
+const buildRefPrix = () => {
+  return produits
+    .filter(p => p.selected)
+    .map(p => ({
+      idproduit: p.id,
+      prix_achat: p.prix_achat,
+      prix_vente_gros: p.prix_vente_gros,
+      prix_vente_details: p.prix_vente_details,
+      cout_transport: p.cout_transport,
+      marge: p.marge,
+      volume: p.volume,
+    }));
+};
 
   // ===================== SUBMIT =====================
   const handleSubmit = async () => {
@@ -168,47 +171,100 @@ export default function RapportRetail() {
   // ===================== UI =====================
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={80}
+    >
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{
+          paddingBottom: 150,
+        }}
+      >
 
         <Text style={styles.title}>Rapport Retail</Text>
+        <Text>Id visite: {idVisite}</Text>
 
         {/* PRODUITS */}
         <Text style={styles.section}>Produits</Text>
 
         {produits.map((p, i) => (
-          <View key={p.id} style={styles.card}>
-            <Text style={styles.name}>{p.intitule}</Text>
+        <View key={p.id} style={styles.card}>
 
-            <TextInput placeholder="Prix achat" style={styles.input}
-              value={p.prix_achat}
-              onChangeText={v => updateProduit(i, 'prix_achat', v)}
-            />
+            <TouchableOpacity
+            onPress={() => toggleProduit(i)}
+            style={styles.productHeader}
+            >
+            <Text style={styles.name}>
+                {p.selected ? '☑' : '☐'} {p.intitule}
+            </Text>
+            </TouchableOpacity>
 
-            <TextInput placeholder="Prix vente gros" style={styles.input}
-              value={p.prix_vente_gros}
-              onChangeText={v => updateProduit(i, 'prix_vente_gros', v)}
-            />
+            {p.selected && (
+            <>
+                <TextInput
+                placeholder="Prix achat"
+                keyboardType="numeric"
+                style={styles.input}
+                value={p.prix_achat}
+                onChangeText={v =>
+                    updateProduit(i, 'prix_achat', v)
+                }
+                />
 
-            <TextInput placeholder="Prix vente détail" style={styles.input}
-              value={p.prix_vente_details}
-              onChangeText={v => updateProduit(i, 'prix_vente_details', v)}
-            />
+                <TextInput
+                placeholder="Prix vente gros"
+                keyboardType="numeric"
+                style={styles.input}
+                value={p.prix_vente_gros}
+                onChangeText={v =>
+                    updateProduit(i, 'prix_vente_gros', v)
+                }
+                />
 
-            <TextInput placeholder="Transport" style={styles.input}
-              value={p.cout_transport}
-              onChangeText={v => updateProduit(i, 'cout_transport', v)}
-            />
+                <TextInput
+                placeholder="Prix vente détail"
+                keyboardType="numeric"
+                style={styles.input}
+                value={p.prix_vente_details}
+                onChangeText={v =>
+                    updateProduit(i, 'prix_vente_details', v)
+                }
+                />
 
-            <TextInput placeholder="Marge" style={styles.input}
-              value={p.marge}
-              onChangeText={v => updateProduit(i, 'marge', v)}
-            />
+                <TextInput
+                placeholder="Coût transport"
+                keyboardType="numeric"
+                style={styles.input}
+                value={p.cout_transport}
+                onChangeText={v =>
+                    updateProduit(i, 'cout_transport', v)
+                }
+                />
 
-            <TextInput placeholder="Volume" style={styles.input}
-              value={p.volume}
-              onChangeText={v => updateProduit(i, 'volume', v)}
-            />
-          </View>
+                <TextInput
+                placeholder="Marge"
+                keyboardType="numeric"
+                style={styles.input}
+                value={p.marge}
+                onChangeText={v =>
+                    updateProduit(i, 'marge', v)
+                }
+                />
+
+                <TextInput
+                placeholder="Quantité"
+                keyboardType="numeric"
+                style={styles.input}
+                value={p.volume}
+                onChangeText={v =>
+                    updateProduit(i, 'volume', v)
+                }
+                />
+            </>
+            )}
+        </View>
         ))}
 
         {/* AUTRES PRODUITS */}
@@ -247,9 +303,9 @@ export default function RapportRetail() {
               onChangeText={v => updateAutre(i, 'marge', v)}
             />
 
-            <TextInput placeholder="Volume" style={styles.input}
+            <TextInput placeholder="Quantité" style={styles.input}
               value={p.volume}
-              onChangeText={v => updateAutre(i, 'volume', v)}
+              onChangeText={v => updateAutre(i, 'Quantité', v)}
             />
           </View>
         ))}
@@ -295,13 +351,14 @@ export default function RapportRetail() {
         </TouchableOpacity>
 
       </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
 // ===================== STYLE =====================
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15 },
+  container: { flex: 1, padding: 15, backgroundColor: '#f5f5f5', },
   title: { fontSize: 22, fontWeight: 'bold' },
 
   section: { marginTop: 20, fontWeight: 'bold' },
@@ -312,6 +369,11 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 10,
   },
+
+
+  productHeader: {
+  paddingVertical: 5,
+},
 
   input: {
     borderWidth: 1,

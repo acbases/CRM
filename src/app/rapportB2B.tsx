@@ -17,6 +17,8 @@ import {
   View,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import { KeyboardAwareScrollView }
+from 'react-native-keyboard-aware-scroll-view';
 
  interface Correspondant {
   id: number;
@@ -347,6 +349,11 @@ const handleSubmit = async () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardAwareScrollView
+        enableOnAndroid={true}
+        extraScrollHeight={100}
+        keyboardShouldPersistTaps="handled"
+      >
       <ScrollView
         contentContainerStyle={styles.content}
       >
@@ -515,6 +522,7 @@ const handleSubmit = async () => {
           </Text>
         </TouchableOpacity>
       </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
