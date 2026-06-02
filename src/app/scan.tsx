@@ -119,6 +119,7 @@ export default function ScanScreen() {
           pathname: '/rapportRetail',
           params: {
             idVisite,
+            idClient: qr.id,
           },
         });
       } else {

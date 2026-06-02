@@ -14,47 +14,49 @@ import {
 import { useLocalSearchParams } from 'expo-router';
 
 export default function RapportRetail() {
-  const { idVisite } = useLocalSearchParams();
+  const { idVisite, idClient  } = useLocalSearchParams();
 
   const [produits, setProduits] = useState<any[]>([]);
   const [plvs, setPlvs] = useState<any[]>([]);
 
   const [autresProduits, setAutresProduits] = useState<any[]>([]);
   const [selectedPlvs, setSelectedPlvs] = useState<number[]>([]);
+  const [visite, setVisite] = useState<any>(null);
+
 
   const [description, setDescription] = useState('');
   const [autrePlv, setAutrePlv] = useState('');
 
   // ===================== GET VISITE + PRODUITS =====================
   useEffect(() => {
-    fetch(`https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`)
-      .then(res => res.json())
-      .then(async json => {
-        const idClient = json.client.id;
+  fetch(`https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`)
+    .then(res => res.json())
+    .then(async json => {
+      setVisite(json); // ✅ IMPORTANT
 
-        const prodRes = await fetch(
-          `https://allapps.alphaciment.com/crm_back/api/produits`
-        );
 
-        const prodData = await prodRes.json();
+      const prodRes = await fetch(
+        `https://allapps.alphaciment.com/crm_back/api/produits`
+      );
 
-        setProduits(
-            prodData.map((p: any) => ({
-                id: p.id,
-                intitule: p.intitule,
-                selected: false,
+      const prodData = await prodRes.json();
 
-                prix_achat: '',
-                prix_vente_gros: '',
-                prix_vente_details: '',
-                cout_transport: '',
-                marge: '',
-                volume: '',
-            }))
-        );
-      })
-      .catch(err => console.log(err));
-  }, [idVisite]);
+      setProduits(
+        prodData.map((p: any) => ({
+          id: p.id,
+          intitule: p.intitule,
+          selected: false,
+          prix_achat: '',
+          prix_vente_gros: '',
+          prix_vente_details: '',
+          cout_transport: '',
+          marge: '',
+          volume: '',
+        }))
+      );
+    })
+    .catch(err => console.log(err));
+}, [idVisite]);
 
   // ===================== GET PLV =====================
   useEffect(() => {
@@ -126,47 +128,148 @@ const buildRefPrix = () => {
 
   // ===================== SUBMIT =====================
   const handleSubmit = async () => {
-    try {
-      const payload = {
-        rapport: {
+  try {
+    // 1️⃣ INSERT RAPPORT
+    const resRapport = await fetch(
+      'https://allapps.alphaciment.com/crm_back/api/rapport',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           idvisite: idVisite,
           description,
           autre_plv: autrePlv,
-        },
+        }),
+      }
+    );
 
-        ref_prix_produit: buildRefPrix(),
+    const rapportData = await resRapport.json();
 
-        autre_produit: autresProduits,
+    if (!resRapport.ok) {
+      Alert.alert('Erreur rapport', JSON.stringify(rapportData));
+      return;
+    }
 
-        recensement_plv: selectedPlvs.map(id => ({
-          idplv: id,
-        })),
-      };
+    const idRapport = rapportData.id; // important si besoin backend
 
-      const res = await fetch(
-        'https://allapps.alphaciment.com/crm_back/api/rapportRetail',
+    // 2️⃣ PRODUITS SÉLECTIONNÉS
+    const produitsSelectionnes = produits
+      .filter(p => p.selected)
+      .map(p => ({
+        idclient: idClient,
+        idproduit: p.id,
+      }));
+
+    // 3️⃣ INSERT PRODUIT_CLIENT
+    const resProduitClient = await fetch(
+      'https://allapps.alphaciment.com/crm_back/api/produitClient',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ produits: produitsSelectionnes }),
+      }
+    );
+
+    const produitClientData = await resProduitClient.json();
+
+    if (!resProduitClient.ok) {
+      Alert.alert('Erreur produit_client', JSON.stringify(produitClientData));
+      return;
+    }
+
+    // 4️⃣ INSERT REF PRIX PRODUIT
+    const refPrix = produits
+      .filter(p => p.selected)
+      .map(p => {
+        const match = produitClientData.find(
+          (pc: any) => pc.idproduit === p.id
+        );
+
+        return {
+          idvisite: idVisite,
+          idproduit: match?.id, // id produit_client
+          prix_achat: p.prix_achat,
+          prix_vente_gros: p.prix_vente_gros,
+          prix_vente_details: p.prix_vente_details,
+          cout_transport: p.cout_transport,
+          marge: p.marge,
+          volume: p.volume,
+        };
+      });
+
+    const resRefPrix = await fetch(
+      'https://allapps.alphaciment.com/crm_back/api/refPrixProduit',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ data: refPrix }),
+      }
+    );
+
+    const refPrixData = await resRefPrix.json();
+
+    if (!resRefPrix.ok) {
+      Alert.alert('Erreur ref_prix', JSON.stringify(refPrixData));
+      return;
+    }
+
+    // 5️⃣ AUTRES PRODUITS
+    if (autresProduits.length > 0) {
+      const resAutre = await fetch(
+        'https://allapps.alphaciment.com/crm_back/api/autreProduit',
         {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(payload),
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            idvisite: idVisite,
+            produits: autresProduits,
+          }),
         }
       );
 
-      const data = await res.json();
+      const dataAutre = await resAutre.json();
 
-      if (!res.ok) {
-        Alert.alert('Erreur', JSON.stringify(data));
+      if (!resAutre.ok) {
+        Alert.alert('Erreur autres produits', JSON.stringify(dataAutre));
         return;
       }
-
-      Alert.alert('Succès', 'Rapport enregistré');
-    } catch (err) {
-      console.log(err);
-      Alert.alert('Erreur serveur');
     }
-  };
+
+    // 6️⃣ PLV
+    const resPlv = await fetch(
+      'https://allapps.alphaciment.com/crm_back/api/recensementPlv',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idVisite,
+          plvs: selectedPlvs,
+          autre_plv: autrePlv,
+        }),
+      }
+    );
+
+    const plvData = await resPlv.json();
+
+    if (!resPlv.ok) {
+      Alert.alert('Erreur PLV', JSON.stringify(plvData));
+      return;
+    }
+
+    // 7️⃣ SUCCESS + RESET
+    Alert.alert('Succès', 'Rapport complet enregistré');
+
+    setProduits([]);
+    setAutresProduits([]);
+    setSelectedPlvs([]);
+    setDescription('');
+    setAutrePlv('');
+
+  } catch (err) {
+    console.log(err);
+    Alert.alert('Erreur serveur');
+  }
+};
 
   // ===================== UI =====================
   return (
