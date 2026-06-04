@@ -216,74 +216,59 @@ const handleSubmit = async () => {
       return;
     }
 
-    // 2️⃣ INSERT PRODUIT_CLIENT
+    // 2️⃣ INSERT PRODUIT_CLIENT (un POST par produit, champs à plat)
     addLog('IDCLIENT VALUE', { idClient, type: typeof idClient });
 
-    const produitsSelectionnes = produits
-      .filter(p => p.selected)
-      .map(p => ({ idclient: Number(idClient), idproduit: Number(p.id) }));
+    const produitsSelectionnes = produits.filter(p => p.selected);
 
-    addLog('PRODUIT CLIENT PAYLOAD', produitsSelectionnes);
+    addLog('PRODUITS SELECTIONNES', produitsSelectionnes.map(p => ({ id: p.id, intitule: p.intitule })));
 
     let produitClientData: any[] = [];
 
-    if (produitsSelectionnes.length > 0) {
-      const resProduitClient = await fetch(
+    for (const p of produitsSelectionnes) {
+      const payload = { idclient: Number(idClient), idproduit: Number(p.id) };
+      addLog(`PRODUIT CLIENT POST ${p.id}`, payload);
+
+      const res = await fetch(
         'https://allapps.alphaciment.com/crm_back/api/produitClient',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ produits: produitsSelectionnes }),
+          body: JSON.stringify(payload),
         }
       );
 
-      const pcText = await resProduitClient.text();
-      addLog('PRODUIT CLIENT RAW', pcText);
+      const text = await res.text();
+      addLog(`PRODUIT CLIENT RAW ${p.id}`, text);
 
-      let pcJson: any;
-      try {
-        pcJson = JSON.parse(pcText);
-      } catch {
-        addLog('PRODUIT CLIENT JSON ERROR', pcText);
-        Alert.alert('Erreur', 'Réponse produitClient invalide');
+      if (!res.ok) {
+        Alert.alert('Erreur produit_client', text);
         return;
       }
-
-      if (!resProduitClient.ok) {
-        Alert.alert('Erreur produit_client', JSON.stringify(pcJson));
-        return;
-      }
-
-      // Le backend ne retourne pas toujours les lignes insérées,
-      // on récupère tous les produit_client du client via GET
-      const resGetPc = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/produitClientByIdClient/${idClient}`
-      );
-      const getPcText = await resGetPc.text();
-      addLog('PRODUIT CLIENT GET RAW', getPcText);
 
       try {
-        const getPcJson = JSON.parse(getPcText);
-        produitClientData = Array.isArray(getPcJson)
-          ? getPcJson
-          : Array.isArray(getPcJson?.data)
-            ? getPcJson.data
-            : [];
+        const json = JSON.parse(text);
+        // Le backend retourne soit l'objet directement, soit dans .data, soit un tableau
+        const row = Array.isArray(json) ? json[0] : (json?.data ?? json);
+        addLog(`PRODUIT CLIENT PARSED ${p.id}`, row);
+        if (row?.id) {
+          produitClientData.push({ ...row, _idproduit_origine: Number(p.id) });
+        }
       } catch {
-        addLog('PRODUIT CLIENT GET JSON ERROR', getPcText);
-        Alert.alert('Erreur', 'Impossible de récupérer les produits client');
-        return;
+        addLog(`PRODUIT CLIENT JSON ERROR ${p.id}`, text);
       }
-
-      addLog('PRODUIT CLIENT PARSED', produitClientData);
     }
+
+    addLog('PRODUIT CLIENT DATA FINAL', produitClientData);
 
     // 3️⃣ INSERT REF PRIX PRODUIT
     const refPrix = produits
       .filter(p => p.selected)
       .map(p => {
         const match = produitClientData.find(
-          (pc: any) => Number(pc.idproduit) === Number(p.id)
+          (pc: any) =>
+            Number(pc._idproduit_origine) === Number(p.id) ||
+            Number(pc.idproduit) === Number(p.id)
         );
         addLog(`MATCH PRODUIT ${p.id}`, match ?? 'AUCUN MATCH');
         return {
