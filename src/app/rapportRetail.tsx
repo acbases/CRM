@@ -293,30 +293,29 @@ const handleSubmit = async () => {
         return;
       }
 
-      const resRefPrix = await fetch(
-        'https://allapps.alphaciment.com/crm_back/api/refPrixProduit',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ data: refPrix }),
-        }
-      );
+      for (const item of refPrix) {
+        addLog('REFPRIX POST ITEM', item);
 
-      const refPrixText = await resRefPrix.text();
-      addLog('REFPRIX RAW', refPrixText);
+        const resRefPrix = await fetch(
+          'https://allapps.alphaciment.com/crm_back/api/refPrixProduit',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item),
+          }
+        );
 
-      if (refPrixText.trim() !== '') {
-        let refPrixData: any;
-        try {
-          refPrixData = JSON.parse(refPrixText);
-        } catch {
-          addLog('REFPRIX NOT JSON', refPrixText);
-          if (!resRefPrix.ok) {
+        const refPrixText = await resRefPrix.text();
+        addLog('REFPRIX RAW', refPrixText);
+
+        if (!resRefPrix.ok) {
+          let refPrixData: any;
+          try {
+            refPrixData = JSON.parse(refPrixText);
+          } catch {
             Alert.alert('Erreur ref_prix', refPrixText);
             return;
           }
-        }
-        if (!resRefPrix.ok) {
           Alert.alert('Erreur ref_prix', JSON.stringify(refPrixData));
           return;
         }
