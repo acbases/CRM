@@ -22,49 +22,102 @@ export default function RapportRetail() {
   const [autresProduits, setAutresProduits] = useState<any[]>([]);
   const [selectedPlvs, setSelectedPlvs] = useState<number[]>([]);
   const [visite, setVisite] = useState<any>(null);
-
+const [errorMessage, setErrorMessage] = useState('');
 
   const [description, setDescription] = useState('');
   const [autrePlv, setAutrePlv] = useState('');
+  const [debugLog, setDebugLog] = useState('');
+
+const addLog = (title: string, data?: any) => {
+  const msg =
+    `[${new Date().toISOString()}] ${title}\n` +
+    (data ? JSON.stringify(data, null, 2) : '');
+
+  setDebugLog(prev => prev + '\n\n' + msg);
+};
 
   // ===================== GET VISITE + PRODUITS =====================
-  useEffect(() => {
-  fetch(`https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`)
-    .then(res => res.json())
-    .then(async json => {
-      setVisite(json); // ✅ IMPORTANT
+useEffect(() => {
+  addLog('FETCH VISITE START', { idVisite });
 
+  fetch(`https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`)
+    .then(async res => {
+      addLog('VISITE STATUS', res.status);
+
+      const text = await res.text();
+
+      try {
+        const json = JSON.parse(text);
+        addLog('VISITE OK', json);
+
+        setVisite(json);
+
+        return json;
+      } catch (e) {
+        addLog('VISITE PARSE ERROR', text);
+        throw e;
+      }
+    })
+    .then(async json => {
+      addLog('FETCH PRODUITS START');
 
       const prodRes = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/produits`
+        'https://allapps.alphaciment.com/crm_back/api/produits'
       );
 
-      const prodData = await prodRes.json();
+      addLog('PRODUITS STATUS', prodRes.status);
 
-      setProduits(
-        prodData.map((p: any) => ({
-          id: p.id,
-          intitule: p.intitule,
-          selected: false,
-          prix_achat: '',
-          prix_vente_gros: '',
-          prix_vente_details: '',
-          cout_transport: '',
-          marge: '',
-          volume: '',
-        }))
-      );
+      const prodText = await prodRes.text();
+
+      try {
+        const prodData = JSON.parse(prodText);
+
+        addLog('PRODUITS OK', prodData);
+
+        setProduits(
+          prodData.map((p: any) => ({
+            id: p.id,
+            intitule: p.intitule,
+            selected: false,
+            prix_achat: '',
+            prix_vente_gros: '',
+            prix_vente_details: '',
+            cout_transport: '',
+            marge: '',
+            volume: '',
+          }))
+        );
+      } catch (e) {
+        addLog('PRODUITS PARSE ERROR', prodText);
+      }
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      addLog('VISITE FETCH ERROR', err);
+    });
 }, [idVisite]);
 
   // ===================== GET PLV =====================
-  useEffect(() => {
-    fetch(`https://allapps.alphaciment.com/crm_back/api/plvs`)
-      .then(res => res.json())
-      .then(setPlvs)
-      .catch(err => console.log(err));
-  }, []);
+useEffect(() => {
+  addLog('FETCH PLV START');
+
+  fetch(`https://allapps.alphaciment.com/crm_back/api/plvs`)
+    .then(async res => {
+      addLog('PLV STATUS', res.status);
+
+      const text = await res.text();
+
+      try {
+        const json = JSON.parse(text);
+        addLog('PLV OK', json);
+        setPlvs(json);
+      } catch (e) {
+        addLog('PLV PARSE ERROR', text);
+      }
+    })
+    .catch(err => {
+      addLog('PLV FETCH ERROR', err);
+    });
+}, []);
 
   // ===================== UPDATE PRODUIT =====================
   const updateProduit = (index: number, field: string, value: string) => {
@@ -127,8 +180,10 @@ const buildRefPrix = () => {
 };
 
   // ===================== SUBMIT =====================
-  const handleSubmit = async () => {
+const handleSubmit = async () => {
   try {
+    addLog('SUBMIT START');
+
     // 1️⃣ INSERT RAPPORT
     const resRapport = await fetch(
       'https://allapps.alphaciment.com/crm_back/api/rapport',
@@ -143,24 +198,29 @@ const buildRefPrix = () => {
       }
     );
 
-    const rapportData = await resRapport.json();
+    const rapportText = await resRapport.text();
+    addLog('RAPPORT RAW', rapportText);
 
-    if (!resRapport.ok) {
-      Alert.alert('Erreur rapport', JSON.stringify(rapportData));
+    let rapportData: any;
+    try {
+      rapportData = JSON.parse(rapportText);
+    } catch {
+      addLog('RAPPORT JSON ERROR', rapportText);
+      Alert.alert('Erreur', 'Réponse rapport invalide');
       return;
     }
 
-    const idRapport = rapportData.id; // important si besoin backend
+    if (!resRapport.ok) {
+      addLog('RAPPORT NOT OK', rapportData);
+      Alert.alert('Erreur rapport', rapportData?.message ?? 'Erreur rapport');
+      return;
+    }
 
-    // 2️⃣ PRODUITS SÉLECTIONNÉS
+    // 2️⃣ INSERT PRODUIT_CLIENT
     const produitsSelectionnes = produits
       .filter(p => p.selected)
-      .map(p => ({
-        idclient: idClient,
-        idproduit: p.id,
-      }));
+      .map(p => ({ idclient: idClient, idproduit: p.id }));
 
-    // 3️⃣ INSERT PRODUIT_CLIENT
     const resProduitClient = await fetch(
       'https://allapps.alphaciment.com/crm_back/api/produitClient',
       {
@@ -170,32 +230,52 @@ const buildRefPrix = () => {
       }
     );
 
-    const produitClientData = await resProduitClient.json();
+    const pcText = await resProduitClient.text();
+    addLog('PRODUIT CLIENT RAW', pcText);
 
-    if (!resProduitClient.ok) {
-      Alert.alert('Erreur produit_client', JSON.stringify(produitClientData));
+    let pcJson: any;
+    try {
+      pcJson = JSON.parse(pcText);
+    } catch {
+      addLog('PRODUIT CLIENT JSON ERROR', pcText);
+      Alert.alert('Erreur', 'Réponse produitClient invalide');
       return;
     }
 
-    // 4️⃣ INSERT REF PRIX PRODUIT
+    if (!resProduitClient.ok) {
+      Alert.alert('Erreur produit_client', JSON.stringify(pcJson));
+      return;
+    }
+
+    const produitClientData: any[] = Array.isArray(pcJson)
+      ? pcJson
+      : Array.isArray(pcJson?.data)
+        ? pcJson.data
+        : [];
+
+    addLog('PRODUIT CLIENT PARSED', produitClientData);
+
+    // 3️⃣ INSERT REF PRIX PRODUIT
     const refPrix = produits
       .filter(p => p.selected)
       .map(p => {
         const match = produitClientData.find(
-          (pc: any) => pc.idproduit === p.id
+          (pc: any) => Number(pc.idproduit) === Number(p.id)
         );
-
+        addLog(`MATCH PRODUIT ${p.id}`, match ?? 'AUCUN MATCH');
         return {
-          idvisite: idVisite,
-          idproduit: match?.id, // id produit_client
-          prix_achat: p.prix_achat,
-          prix_vente_gros: p.prix_vente_gros,
-          prix_vente_details: p.prix_vente_details,
-          cout_transport: p.cout_transport,
-          marge: p.marge,
-          volume: p.volume,
+          idvisite: Number(idVisite),
+          idproduit: match?.id ?? null,
+          prix_achat: p.prix_achat || null,
+          prix_vente_gros: p.prix_vente_gros || null,
+          prix_vente_details: p.prix_vente_details || null,
+          cout_transport: p.cout_transport || null,
+          marge: p.marge || null,
+          volume: p.volume || null,
         };
       });
+
+    addLog('REFPRIX PAYLOAD', refPrix);
 
     const resRefPrix = await fetch(
       'https://allapps.alphaciment.com/crm_back/api/refPrixProduit',
@@ -206,14 +286,27 @@ const buildRefPrix = () => {
       }
     );
 
-    const refPrixData = await resRefPrix.json();
+    const refPrixText = await resRefPrix.text();
+    addLog('REFPRIX RAW', refPrixText);
 
-    if (!resRefPrix.ok) {
-      Alert.alert('Erreur ref_prix', JSON.stringify(refPrixData));
-      return;
+    if (refPrixText.trim() !== '') {
+      let refPrixData: any;
+      try {
+        refPrixData = JSON.parse(refPrixText);
+      } catch {
+        addLog('REFPRIX NOT JSON', refPrixText);
+        if (!resRefPrix.ok) {
+          Alert.alert('Erreur ref_prix', refPrixText);
+          return;
+        }
+      }
+      if (!resRefPrix.ok) {
+        Alert.alert('Erreur ref_prix', JSON.stringify(refPrixData));
+        return;
+      }
     }
 
-    // 5️⃣ AUTRES PRODUITS
+    // 4️⃣ AUTRES PRODUITS
     if (autresProduits.length > 0) {
       const resAutre = await fetch(
         'https://allapps.alphaciment.com/crm_back/api/autreProduit',
@@ -227,47 +320,95 @@ const buildRefPrix = () => {
         }
       );
 
-      const dataAutre = await resAutre.json();
+      const autreText = await resAutre.text();
+      addLog('AUTRE PRODUIT RAW', autreText);
+
+      let autreData: any;
+      try {
+        autreData = JSON.parse(autreText);
+      } catch {
+        throw new Error('Réponse autreProduit invalide');
+      }
 
       if (!resAutre.ok) {
-        Alert.alert('Erreur autres produits', JSON.stringify(dataAutre));
+        Alert.alert('Erreur autres produits', JSON.stringify(autreData));
         return;
       }
     }
 
-    // 6️⃣ PLV
-    const resPlv = await fetch(
-      'https://allapps.alphaciment.com/crm_back/api/recensementPlv',
+    // 5️⃣ PLV
+    if (selectedPlvs.length > 0 || autrePlv) {
+      const resPlv = await fetch(
+        'https://allapps.alphaciment.com/crm_back/api/recensementPlv',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            idvisite: idVisite,
+            plvs: selectedPlvs,
+            autre_plv: autrePlv,
+          }),
+        }
+      );
+
+      const plvText = await resPlv.text();
+      addLog('PLV RAW', plvText);
+
+      let plvData: any;
+      try {
+        plvData = JSON.parse(plvText);
+      } catch {
+        throw new Error('Réponse PLV invalide');
+      }
+
+      if (!resPlv.ok) {
+        Alert.alert('Erreur PLV', JSON.stringify(plvData));
+        return;
+      }
+    }
+
+    // 6️⃣ UPDATE STATUT VISITE
+    const resUpdate = await fetch(
+      `https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`,
       {
-        method: 'POST',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          idVisite,
-          plvs: selectedPlvs,
-          autre_plv: autrePlv,
-        }),
+        body: JSON.stringify({ statut: 1 }),
       }
     );
 
-    const plvData = await resPlv.json();
+    const updateText = await resUpdate.text();
+    addLog('VISITE UPDATE RAW', updateText);
 
-    if (!resPlv.ok) {
-      Alert.alert('Erreur PLV', JSON.stringify(plvData));
-      return;
+    if (!resUpdate.ok) {
+      addLog('VISITE UPDATE FAILED', updateText);
+      // Non bloquant, on continue
     }
 
-    // 7️⃣ SUCCESS + RESET
-    Alert.alert('Succès', 'Rapport complet enregistré');
-
-    setProduits([]);
+    // 7️⃣ RESET
+    setProduits(prev => prev.map(p => ({
+      ...p,
+      selected: false,
+      prix_achat: '',
+      prix_vente_gros: '',
+      prix_vente_details: '',
+      cout_transport: '',
+      marge: '',
+      volume: '',
+    })));
     setAutresProduits([]);
     setSelectedPlvs([]);
     setDescription('');
     setAutrePlv('');
+    setErrorMessage('');
 
-  } catch (err) {
-    console.log(err);
-    Alert.alert('Erreur serveur');
+    Alert.alert('Succès', 'Rapport complet enregistré ✅');
+
+  } catch (err: any) {
+    addLog('SUBMIT ERROR', err);
+    const msg = err?.message || JSON.stringify(err) || 'Erreur inconnue';
+    setErrorMessage(msg);
+    Alert.alert('Erreur', msg);
   }
 };
 
@@ -408,7 +549,7 @@ const buildRefPrix = () => {
 
             <TextInput placeholder="Quantité" style={styles.input}
               value={p.volume}
-              onChangeText={v => updateAutre(i, 'Quantité', v)}
+              onChangeText={v => updateAutre(i, 'volume', v)}
             />
           </View>
         ))}
@@ -452,7 +593,13 @@ const buildRefPrix = () => {
             ENREGISTRER
           </Text>
         </TouchableOpacity>
-
+        {/* DEBUG */}
+        {debugLog.length > 0 && (
+        <View style={styles.debugBox}>
+            <Text style={styles.debugTitle}>── DEBUG ──</Text>
+            <Text selectable style={styles.debugText}>{debugLog}</Text>
+        </View>
+        )}
       </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -465,6 +612,24 @@ const styles = StyleSheet.create({
   title: { fontSize: 22, fontWeight: 'bold' },
 
   section: { marginTop: 20, fontWeight: 'bold' },
+
+debugBox: {
+  marginTop: 20,
+  padding: 10,
+  backgroundColor: '#1e1e1e',
+  borderRadius: 8,
+},
+debugTitle: {
+  color: '#00e676',
+  fontWeight: 'bold',
+  marginBottom: 4,
+  fontSize: 12,
+},
+debugText: {
+  color: '#ccc',
+  fontSize: 10,
+  fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+},
 
   card: {
     backgroundColor: '#fff',

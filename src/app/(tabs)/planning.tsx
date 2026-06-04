@@ -97,10 +97,10 @@ useEffect(() => {
         console.log('Visite sélectionnée:', item.id);
         const route =
           item.statut === 0
-            ? '/rapportB2B'
-            : '/resultB2B';
+            ? '/scan'
+            : '/resultRetail';
         router.push({
-          pathname: '/scan',
+          pathname: route,
           params: {
             idVisite: item.id.toString(),
           },
