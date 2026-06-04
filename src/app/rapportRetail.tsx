@@ -189,7 +189,7 @@ const handleSubmit = async () => {
       'https://allapps.alphaciment.com/crm_back/api/rapport',
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
           idvisite: idVisite,
           description,
@@ -233,7 +233,7 @@ const handleSubmit = async () => {
         'https://allapps.alphaciment.com/crm_back/api/produitClient',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify(payload),
         }
       );
@@ -300,7 +300,7 @@ const handleSubmit = async () => {
           'https://allapps.alphaciment.com/crm_back/api/refPrixProduit',
           {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify(item),
           }
         );
@@ -328,7 +328,7 @@ const handleSubmit = async () => {
         'https://allapps.alphaciment.com/crm_back/api/autreProduit',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify({
             idvisite: idVisite,
             produits: autresProduits,
@@ -358,7 +358,7 @@ const handleSubmit = async () => {
         'https://allapps.alphaciment.com/crm_back/api/recensementPlv',
         {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
           body: JSON.stringify({
             idvisite: idVisite,
             plvs: selectedPlvs,
@@ -388,7 +388,7 @@ const handleSubmit = async () => {
       `https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`,
       {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ statut: 1 }),
       }
     );
