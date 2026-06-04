@@ -13,7 +13,10 @@ export default function ResultRetail() {
   const { idVisite } = useLocalSearchParams();
 
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState<any>(null);
+  const [rapport, setRapport] = useState<any>(null);
+  const [produits, setProduits] = useState<any>(null);
+  const [plv, setPlv] = useState<any>(null);
+  const [autres, setAutres] = useState<any>(null);
 
   useEffect(() => {
     loadData();
@@ -21,13 +24,36 @@ export default function ResultRetail() {
 
   const loadData = async () => {
     try {
-      const response = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/resultRetail/${idVisite}`
+      const responseRapport = await fetch(
+        `https://allapps.alphaciment.com/crm_back/api/getRapportByIdVisite/${idVisite}` //rapport
       );
 
-      const json = await response.json();
+      const responseProduits = await fetch(
+        `https://allapps.alphaciment.com/crm_back/api/getVueRapportProduitsByIdVisite/${idVisite}` //produits
+      );
 
-      setData(json);
+      const responsePlv = await fetch(
+        `https://allapps.alphaciment.com/crm_back/api/getVueRapportPlvByIdVisite/${idVisite}`  //plv
+      );
+
+      const responseAutres = await fetch(
+        `https://allapps.alphaciment.com/crm_back/api/getVueRapportAutresProduitsByIdVisite/${idVisite}`    //autres produits
+      );
+
+      const rapportJson = await responseRapport.json();
+      const produitsJson = await responseProduits.json();
+      const plvJson = await responsePlv.json();
+      const autresJson = await responseAutres.json();
+
+      setRapport(rapportJson);
+      setProduits(produitsJson);
+      setPlv(plvJson);
+      setAutres(autresJson);
+      console.log('RAPPORT:', rapportJson);
+      console.log('PRODUITS:', produitsJson);
+      console.log('PLV:', plvJson);
+      console.log('AUTRES PRODUITS:', autresJson);
+
     } catch (error) {
       console.log(error);
     } finally {
@@ -43,7 +69,7 @@ export default function ResultRetail() {
     );
   }
 
-  if (!data) {
+  if (!rapport && !produits && !plv && !autres) {
     return (
       <View style={styles.center}>
         <Text>Aucune donnée trouvée</Text>
@@ -67,17 +93,10 @@ export default function ResultRetail() {
           </Text>
 
           <Text>
-            {data.rapport?.description ||
-              'Aucun commentaire'}
+            {rapport?.[0]?.description || 'Aucun commentaire'}
           </Text>
 
-          <Text style={styles.label}>
-            Autre PLV
-          </Text>
-
-          <Text>
-            {data.rapport?.autre_plv || '-'}
-          </Text>
+          
         </View>
 
         {/* PRODUITS */}
@@ -85,50 +104,50 @@ export default function ResultRetail() {
           Produits relevés
         </Text>
 
-        {data.ref_prix_produit?.map(
+        {produits?.map(
           (item: any, index: number) => (
             <View
               key={index}
               style={styles.card}
             >
               <Text style={styles.productTitle}>
-                {item.produit?.intitule}
+                {item?.intitule}
               </Text>
 
               <Text>
                 Prix achat :
                 {' '}
-                {item.prix_achat}
+                {item?.prix_achat}
               </Text>
 
               <Text>
                 Prix vente gros :
                 {' '}
-                {item.prix_vente_gros}
+                {item?.prix_vente_gros}
               </Text>
 
               <Text>
                 Prix vente détail :
                 {' '}
-                {item.prix_vente_details}
+                {item?.prix_vente_details}
               </Text>
 
               <Text>
                 Coût transport :
                 {' '}
-                {item.cout_transport}
+                {item?.cout_transport}
               </Text>
 
               <Text>
                 Marge :
                 {' '}
-                {item.marge}
+                {item?.marge}
               </Text>
 
               <Text>
                 Volume :
                 {' '}
-                {item.volume}
+                {item?.volume} Tonnes
               </Text>
             </View>
           )
@@ -139,8 +158,8 @@ export default function ResultRetail() {
           Autres Produits
         </Text>
 
-        {data.autre_produit?.length > 0 ? (
-          data.autre_produit.map(
+        {autres?.length > 0 ? (
+          autres?.map(
             (item: any, index: number) => (
               <View
                 key={index}
@@ -202,17 +221,24 @@ export default function ResultRetail() {
         </Text>
 
         <View style={styles.card}>
-          {data.recensement_plv?.length > 0 ? (
-            data.recensement_plv.map(
+          {plv?.length > 0 ? (
+            plv?.map(
               (plv: any, index: number) => (
                 <Text key={index}>
-                  ✓ {plv.plv?.nom}
+                  ✓ {plv.plv_nom}
                 </Text>
               )
             )
           ) : (
             <Text>Aucune PLV</Text>
           )}
+          <Text style={styles.label}>
+            Autre PLV
+          </Text>
+
+          <Text>
+            {rapport?.[0]?.autre_plv || 'Aucune autre PLV'}
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
