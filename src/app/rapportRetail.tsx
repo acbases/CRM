@@ -221,39 +221,43 @@ const handleSubmit = async () => {
       .filter(p => p.selected)
       .map(p => ({ idclient: idClient, idproduit: p.id }));
 
-    const resProduitClient = await fetch(
-      'https://allapps.alphaciment.com/crm_back/api/produitClient',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ produits: produitsSelectionnes }),
+    let produitClientData: any[] = [];
+
+    if (produitsSelectionnes.length > 0) {
+      const resProduitClient = await fetch(
+        'https://allapps.alphaciment.com/crm_back/api/produitClient',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ produits: produitsSelectionnes }),
+        }
+      );
+
+      const pcText = await resProduitClient.text();
+      addLog('PRODUIT CLIENT RAW', pcText);
+
+      let pcJson: any;
+      try {
+        pcJson = JSON.parse(pcText);
+      } catch {
+        addLog('PRODUIT CLIENT JSON ERROR', pcText);
+        Alert.alert('Erreur', 'Réponse produitClient invalide');
+        return;
       }
-    );
 
-    const pcText = await resProduitClient.text();
-    addLog('PRODUIT CLIENT RAW', pcText);
+      if (!resProduitClient.ok) {
+        Alert.alert('Erreur produit_client', JSON.stringify(pcJson));
+        return;
+      }
 
-    let pcJson: any;
-    try {
-      pcJson = JSON.parse(pcText);
-    } catch {
-      addLog('PRODUIT CLIENT JSON ERROR', pcText);
-      Alert.alert('Erreur', 'Réponse produitClient invalide');
-      return;
+      produitClientData = Array.isArray(pcJson)
+        ? pcJson
+        : Array.isArray(pcJson?.data)
+          ? pcJson.data
+          : [];
+
+      addLog('PRODUIT CLIENT PARSED', produitClientData);
     }
-
-    if (!resProduitClient.ok) {
-      Alert.alert('Erreur produit_client', JSON.stringify(pcJson));
-      return;
-    }
-
-    const produitClientData: any[] = Array.isArray(pcJson)
-      ? pcJson
-      : Array.isArray(pcJson?.data)
-        ? pcJson.data
-        : [];
-
-    addLog('PRODUIT CLIENT PARSED', produitClientData);
 
     // 3️⃣ INSERT REF PRIX PRODUIT
     const refPrix = produits
@@ -277,32 +281,41 @@ const handleSubmit = async () => {
 
     addLog('REFPRIX PAYLOAD', refPrix);
 
-    const resRefPrix = await fetch(
-      'https://allapps.alphaciment.com/crm_back/api/refPrixProduit',
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: refPrix }),
+    if (refPrix.length > 0) {
+      const nullMatches = refPrix.filter(r => r.idproduit === null);
+      if (nullMatches.length > 0) {
+        addLog('REFPRIX NULL MATCHES', nullMatches);
+        Alert.alert('Erreur', `${nullMatches.length} produit(s) sans correspondance produit_client`);
+        return;
       }
-    );
 
-    const refPrixText = await resRefPrix.text();
-    addLog('REFPRIX RAW', refPrixText);
+      const resRefPrix = await fetch(
+        'https://allapps.alphaciment.com/crm_back/api/refPrixProduit',
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: refPrix }),
+        }
+      );
 
-    if (refPrixText.trim() !== '') {
-      let refPrixData: any;
-      try {
-        refPrixData = JSON.parse(refPrixText);
-      } catch {
-        addLog('REFPRIX NOT JSON', refPrixText);
+      const refPrixText = await resRefPrix.text();
+      addLog('REFPRIX RAW', refPrixText);
+
+      if (refPrixText.trim() !== '') {
+        let refPrixData: any;
+        try {
+          refPrixData = JSON.parse(refPrixText);
+        } catch {
+          addLog('REFPRIX NOT JSON', refPrixText);
+          if (!resRefPrix.ok) {
+            Alert.alert('Erreur ref_prix', refPrixText);
+            return;
+          }
+        }
         if (!resRefPrix.ok) {
-          Alert.alert('Erreur ref_prix', refPrixText);
+          Alert.alert('Erreur ref_prix', JSON.stringify(refPrixData));
           return;
         }
-      }
-      if (!resRefPrix.ok) {
-        Alert.alert('Erreur ref_prix', JSON.stringify(refPrixData));
-        return;
       }
     }
 
