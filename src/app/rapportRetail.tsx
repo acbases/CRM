@@ -250,11 +250,26 @@ const handleSubmit = async () => {
         return;
       }
 
-      produitClientData = Array.isArray(pcJson)
-        ? pcJson
-        : Array.isArray(pcJson?.data)
-          ? pcJson.data
-          : [];
+      // Le backend ne retourne pas toujours les lignes insérées,
+      // on récupère tous les produit_client du client via GET
+      const resGetPc = await fetch(
+        `https://allapps.alphaciment.com/crm_back/api/produitClientByIdClient/${idClient}`
+      );
+      const getPcText = await resGetPc.text();
+      addLog('PRODUIT CLIENT GET RAW', getPcText);
+
+      try {
+        const getPcJson = JSON.parse(getPcText);
+        produitClientData = Array.isArray(getPcJson)
+          ? getPcJson
+          : Array.isArray(getPcJson?.data)
+            ? getPcJson.data
+            : [];
+      } catch {
+        addLog('PRODUIT CLIENT GET JSON ERROR', getPcText);
+        Alert.alert('Erreur', 'Impossible de récupérer les produits client');
+        return;
+      }
 
       addLog('PRODUIT CLIENT PARSED', produitClientData);
     }
