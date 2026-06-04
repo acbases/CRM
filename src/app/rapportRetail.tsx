@@ -217,9 +217,13 @@ const handleSubmit = async () => {
     }
 
     // 2️⃣ INSERT PRODUIT_CLIENT
+    addLog('IDCLIENT VALUE', { idClient, type: typeof idClient });
+
     const produitsSelectionnes = produits
       .filter(p => p.selected)
-      .map(p => ({ idclient: idClient, idproduit: p.id }));
+      .map(p => ({ idclient: Number(idClient), idproduit: Number(p.id) }));
+
+    addLog('PRODUIT CLIENT PAYLOAD', produitsSelectionnes);
 
     let produitClientData: any[] = [];
 
