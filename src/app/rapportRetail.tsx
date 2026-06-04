@@ -322,62 +322,71 @@ const handleSubmit = async () => {
       }
     }
 
-    // 4️⃣ AUTRES PRODUITS
-    if (autresProduits.length > 0) {
+    // 4️⃣ AUTRES PRODUITS (un POST par produit, champs à plat)
+    for (const ap of autresProduits) {
+      const { id: _localId, ...apFields } = ap; // exclure l'id temporaire frontend
+      const autrePayload = {
+        idvisite: Number(idVisite),
+        nom: apFields.nom,
+        prix_achat: apFields.prix_achat || null,
+        prix_vente_gros: apFields.prix_vente_gros || null,
+        prix_vente_details: apFields.prix_vente_details || null,
+        cout_transport: apFields.cout_transport || null,
+        marge: apFields.marge || null,
+        volume: apFields.volume || null,
+      };
+      addLog('AUTRE PRODUIT POST ITEM', autrePayload);
+
       const resAutre = await fetch(
         'https://allapps.alphaciment.com/crm_back/api/autreProduit',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({
-            idvisite: idVisite,
-            produits: autresProduits,
-          }),
+          body: JSON.stringify(autrePayload),
         }
       );
 
       const autreText = await resAutre.text();
       addLog('AUTRE PRODUIT RAW', autreText);
 
-      let autreData: any;
-      try {
-        autreData = JSON.parse(autreText);
-      } catch {
-        throw new Error('Réponse autreProduit invalide');
-      }
-
       if (!resAutre.ok) {
+        let autreData: any;
+        try {
+          autreData = JSON.parse(autreText);
+        } catch {
+          Alert.alert('Erreur autres produits', autreText);
+          return;
+        }
         Alert.alert('Erreur autres produits', JSON.stringify(autreData));
         return;
       }
     }
 
-    // 5️⃣ PLV
-    if (selectedPlvs.length > 0 || autrePlv) {
+    // 5️⃣ PLV (un POST par PLV sélectionnée)
+    for (const idplv of selectedPlvs) {
+      const plvPayload = { idvisite: Number(idVisite), idplv };
+      addLog('PLV POST ITEM', plvPayload);
+
       const resPlv = await fetch(
         'https://allapps.alphaciment.com/crm_back/api/recensementPlv',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({
-            idvisite: idVisite,
-            plvs: selectedPlvs,
-            autre_plv: autrePlv,
-          }),
+          body: JSON.stringify(plvPayload),
         }
       );
 
       const plvText = await resPlv.text();
       addLog('PLV RAW', plvText);
 
-      let plvData: any;
-      try {
-        plvData = JSON.parse(plvText);
-      } catch {
-        throw new Error('Réponse PLV invalide');
-      }
-
       if (!resPlv.ok) {
+        let plvData: any;
+        try {
+          plvData = JSON.parse(plvText);
+        } catch {
+          Alert.alert('Erreur PLV', plvText);
+          return;
+        }
         Alert.alert('Erreur PLV', JSON.stringify(plvData));
         return;
       }
