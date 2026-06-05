@@ -7,6 +7,7 @@ import { TouchableOpacity } from 'react-native';
 
 
 
+
 interface Visite {
   id: number;
 
@@ -62,21 +63,37 @@ const [page, setPage] = useState(1);
 const [loadingMore, setLoadingMore] = useState(false);
 const [hasMore, setHasMore] = useState(true);
 
-useEffect(() => {
-  fetch('https://allapps.alphaciment.com/crm_back/api/visiteByIdUtilisateur/3')
-    .then(res => res.json())
-    .then(json => {
-      if (Array.isArray(json)) {
-        const sorted = [...json].sort((a, b) =>
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
-        setVisites(sorted);
-      } else {
-        setVisites([]);
-      }
-    })
-    .catch(err => console.log(err));
-}, []);
+
+const loadVisites = async () => {
+  try {
+    const res = await fetch(
+      'https://allapps.alphaciment.com/crm_back/api/visiteByIdUtilisateur/3'
+    );
+
+    const json = await res.json();
+
+    if (Array.isArray(json)) {
+      const sorted = [...json].sort(
+        (a, b) =>
+          new Date(b.date).getTime() -
+          new Date(a.date).getTime()
+      );
+
+      setVisites(sorted);
+    } else {
+      setVisites([]);
+    }
+  } catch (err) {
+    console.log(err);
+    setVisites([]);
+  }
+};
+
+useFocusEffect(
+  useCallback(() => {
+    loadVisites();
+  }, [])
+);
 
   const today = new Date().toISOString().split('T')[0];
 
@@ -95,10 +112,20 @@ useEffect(() => {
       activeOpacity={0.8}
       onPress={() => {
         console.log('Visite sélectionnée:', item.id);
+
+        const b2bCategories = [12, 13, 14, 15, 16, 18, 19];
+
+        const isB2B = b2bCategories.includes(item?.client?.idcategorie);
+
         const route =
           item.statut === 0
-            ? '/scan'
-            : '/resultRetail';
+            ? isB2B
+              ? '/rapportB2B'
+              : '/scan'
+            : isB2B
+              ? '/resultB2B'
+              : '/resultRetail';
+              
         router.push({
           pathname: route,
           params: {

@@ -11,9 +11,10 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter  } from 'expo-router';
 
 export default function RapportRetail() {
+    const router = useRouter();
   const { idVisite, idClient  } = useLocalSearchParams();
 
   const [produits, setProduits] = useState<any[]>([]);
@@ -428,6 +429,7 @@ const handleSubmit = async () => {
     setErrorMessage('');
 
     Alert.alert('Succès', 'Rapport complet enregistré ✅');
+    router.replace('/planning');
 
   } catch (err: any) {
     addLog('SUBMIT ERROR', err);
@@ -619,12 +621,12 @@ const handleSubmit = async () => {
           </Text>
         </TouchableOpacity>
         {/* DEBUG */}
-        {debugLog.length > 0 && (
+        {/* {debugLog.length > 0 && (
         <View style={styles.debugBox}>
             <Text style={styles.debugTitle}>── DEBUG ──</Text>
             <Text selectable style={styles.debugText}>{debugLog}</Text>
         </View>
-        )}
+        )} */}
       </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

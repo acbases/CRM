@@ -335,7 +335,7 @@ const handleSubmit = async () => {
     setSelectedCorrespondant(null);
 
     // redirection
-    router.replace('/(tabs)/planning');
+    router.replace('/planning');
 
   } catch (error) {
     console.log('SUBMIT ERROR:', error);

@@ -62,6 +62,7 @@ export default function NewVisiteScreen() {
   const [objectif, setObjectif] = useState('');
   const [error, setError] = useState('');
   const [showClientList, setShowClientList] = useState(false);
+  const [debugLog, setDebugLog] = useState('');
 
   const [motifVisiteId, setMotifVisiteId] =
   useState<number | null>(null);
@@ -86,6 +87,15 @@ export default function NewVisiteScreen() {
   const [clientId, setClientId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
+const addLog = (title: string, data?: any) => {
+  const msg =
+    `[${new Date().toISOString()}] ${title}\n` +
+    (data ? JSON.stringify(data, null, 2) : '');
+
+  console.log(msg); // console console dev
+
+  setDebugLog(prev => prev + '\n\n' + msg); // affichage UI
+};
 useEffect(() => {
     fetch('https://allapps.alphaciment.com/crm_back/api/clients')
       .then((response) => response.json())
@@ -159,80 +169,69 @@ useEffect(() => {
     };
 
     const handleSubmit = async () => {
-        try {
-            setError('');
+      if (!clientId || clientId < 1) {
+        Alert.alert('Erreur', 'Veuillez sélectionner un client valide');
+        return;
+      }
+  try {
+    addLog('SUBMIT START');
 
-            if (!clientId) {
-            setError('Veuillez sélectionner un client');
-            return;
-            }
-
-            if (!motifVisiteId) {
-            setError('Veuillez sélectionner une nature de visite');
-            return;
-            }
-
-            if (!typeVisiteId) {
-            setError('Veuillez sélectionner un type de visite');
-            return;
-            }
-
-            const body = {
-                idclient: clientId,
-                idutilisateur: 3,
-                idcategorie: motifVisiteId,
-                date: formatDate(date),
-                statut: 0,
-                type: 1,
-                idtype: typeVisiteId,
-                object: objectif, // ✅ CORRIGÉ (pas "object")
-            };
-
-            console.log('BODY:', body);
-
-            const response = await fetch(
-            'https://allapps.alphaciment.com/crm_back/api/visite',
-            {
-                method: 'POST',
-                headers: {
-                'Content-Type': 'application/json',
-                Accept: 'application/json',
-                },
-                body: JSON.stringify(body),
-            }
-            );
-
-            const result = await response.json();
-
-            if (!response.ok) {
-            throw new Error(result.message || 'Erreur insertion visite');
-            }
-
-            Alert.alert('Succès', 'Visite enregistrée avec succès');
-
-            // reset
-            setClient('');
-            setClientId(null);
-
-            setAgenceClient('');
-            setAgenceClientId(null);
-
-            setMotifVisite('');
-            setMotifVisiteId(null);
-
-            setTypeVisite('');
-            setTypeVisiteId(null);
-
-            setTypeClient('');
-            setTypeClientId(null);
-
-            setObjectif('');
-            setDate(new Date());
-        } catch (err: any) {
-            console.error(err);
-            Alert.alert('Erreur', err.message);
-        }
+    const body = {
+      idclient: clientId,
+      idutilisateur: 3,
+      idcategorie: motifVisiteId,
+      date: formatDate(date),
+      statut: 0,
+      type: 1,
+      idtype: typeVisiteId,
+      object: objectif,
     };
+
+    addLog('REQUEST BODY', body);
+    console.log('CLIENT DEBUG:', {
+      client,
+      clientId,
+    });
+
+    const response = await fetch(
+      'https://allapps.alphaciment.com/crm_back/api/visite',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(body),
+      }
+    );
+
+    addLog('HTTP STATUS', response.status);
+
+    const text = await response.text();
+    addLog('RAW RESPONSE', text);
+
+    let result;
+    try {
+      result = JSON.parse(text);
+      addLog('PARSED JSON', result);
+    } catch (e) {
+      addLog('JSON PARSE ERROR', text);
+      throw new Error('Réponse serveur invalide');
+    }
+
+    if (!response.ok) {
+      throw new Error(result.message || 'Erreur insertion visite');
+    }
+
+    addLog('SUCCESS');
+
+    Alert.alert('Succès', 'Visite enregistrée avec succès');
+
+  } catch (err: any) {
+    addLog('ERROR', err.message);
+    Alert.alert('Erreur', err.message);
+  }
+};
 
 const onChangeDate = (event: any, selectedDate?: Date) => {
   if (selectedDate) {
@@ -412,11 +411,13 @@ const onChangeDate = (event: any, selectedDate?: Date) => {
           value={client}
           onChangeText={(t) => {
             setClient(t);
+            setClientId(null); // important
             setShowClientList(true);
           }}
+          onFocus={() => setShowClientList(true)}
         />
 
-        {showClientList && client.length > 0 && (
+        {showClientList && (
           <View style={styles.suggestion}>
             {filteredClients.slice(0, 10).map((c: Client) => (
                 <TouchableOpacity
@@ -514,6 +515,14 @@ const onChangeDate = (event: any, selectedDate?: Date) => {
             ✓ Enregistrer
           </Text>
         </TouchableOpacity>
+        {/* {debugLog.length > 0 && (
+          <View style={styles.debugBox}>
+            <Text style={styles.debugTitle}>DEBUG LOG</Text>
+            <Text selectable style={styles.debugText}>
+              {debugLog}
+            </Text>
+          </View>
+        )} */}
       </ScrollView>
     </SafeAreaView>
   );
@@ -529,6 +538,25 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 20,
   },
+
+  debugBox: {
+  marginTop: 20,
+  padding: 10,
+  backgroundColor: '#111',
+  borderRadius: 8,
+},
+
+debugTitle: {
+  color: '#00ff88',
+  fontWeight: 'bold',
+  marginBottom: 5,
+},
+
+debugText: {
+  color: '#ccc',
+  fontSize: 10,
+  fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+},
 
   label: {
     fontWeight: '600',

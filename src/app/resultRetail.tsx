@@ -17,6 +17,7 @@ export default function ResultRetail() {
   const [produits, setProduits] = useState<any>(null);
   const [plv, setPlv] = useState<any>(null);
   const [autres, setAutres] = useState<any>(null);
+  const [visiste, setVisite] = useState<any>(null);
 
   useEffect(() => {
     loadData();
@@ -24,6 +25,12 @@ export default function ResultRetail() {
 
   const loadData = async () => {
     try {
+
+    const responseVisite = await fetch(
+        `https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`
+    );
+    const visiteJson = await responseVisite.json();
+
       const responseRapport = await fetch(
         `https://allapps.alphaciment.com/crm_back/api/getRapportByIdVisite/${idVisite}` //rapport
       );
@@ -49,10 +56,13 @@ export default function ResultRetail() {
       setProduits(produitsJson);
       setPlv(plvJson);
       setAutres(autresJson);
+      setVisite(visiteJson);
+
       console.log('RAPPORT:', rapportJson);
       console.log('PRODUITS:', produitsJson);
       console.log('PLV:', plvJson);
       console.log('AUTRES PRODUITS:', autresJson);
+      console.log('VISITE:', visiteJson);
 
     } catch (error) {
       console.log(error);
@@ -85,9 +95,51 @@ export default function ResultRetail() {
         <Text style={styles.title}>
           Résultat Visite Retail
         </Text>
+        <View style={styles.clientCard}>
+            <Text style={styles.clientName}>
+                {visiste?.client?.nom || 'Client inconnu'}
+            </Text>
+
+            <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Date visite :</Text>
+                <Text style={styles.infoValue}>
+                    {visiste?.date
+                    ? new Date(visiste.date).toLocaleDateString('fr-FR')
+                    : '-'}
+                </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Zone :</Text>
+                <Text style={styles.infoValue}>
+                {visiste?.client?.zone || '-'}
+                </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Quartier :</Text>
+                <Text style={styles.infoValue}>
+                {visiste?.client?.quartier || '-'}
+                </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Type client :</Text>
+                <Text style={styles.infoValue}>
+                {visiste?.client?.categorie_client?.intitule || '-'}
+                </Text>
+            </View>
+            <View style={styles.infoRow}>
+                <Text style={styles.infoLabel}>Type visite   :</Text>
+                <Text style={styles.infoValue}>
+                {visiste?.categorie_visite?.intitule || '-'}
+                </Text>
+            </View>
+            </View>
 
         {/* RAPPORT */}
         <View style={styles.card}>
+            
           <Text style={styles.sectionTitle}>
             Commentaire
           </Text>
@@ -117,25 +169,25 @@ export default function ResultRetail() {
               <Text>
                 Prix achat :
                 {' '}
-                {item?.prix_achat}
+                {item?.prix_achat} Ar
               </Text>
 
               <Text>
                 Prix vente gros :
                 {' '}
-                {item?.prix_vente_gros}
+                {item?.prix_vente_gros} Ar
               </Text>
 
               <Text>
                 Prix vente détail :
                 {' '}
-                {item?.prix_vente_details}
+                {item?.prix_vente_details} Ar
               </Text>
 
               <Text>
                 Coût transport :
                 {' '}
-                {item?.cout_transport}
+                {item?.cout_transport} Ar
               </Text>
 
               <Text>
@@ -147,7 +199,7 @@ export default function ResultRetail() {
               <Text>
                 Volume :
                 {' '}
-                {item?.volume} Tonnes
+                {item?.volume} T
               </Text>
             </View>
           )
@@ -174,25 +226,25 @@ export default function ResultRetail() {
                 <Text>
                   Prix achat :
                   {' '}
-                  {item.prix_achat}
+                  {item.prix_achat} Ar
                 </Text>
 
                 <Text>
                   Prix vente gros :
                   {' '}
-                  {item.prix_vente_gros}
+                  {item.prix_vente_gros} Ar
                 </Text>
 
                 <Text>
                   Prix vente détail :
                   {' '}
-                  {item.prix_vente_details}
+                  {item.prix_vente_details} Ar
                 </Text>
 
                 <Text>
                   Transport :
                   {' '}
-                  {item.cout_transport}
+                  {item.cout_transport} Ar
                 </Text>
 
                 <Text>
@@ -204,7 +256,7 @@ export default function ResultRetail() {
                 <Text>
                   Volume :
                   {' '}
-                  {item.volume}
+                  {item.volume} T
                 </Text>
               </View>
             )
@@ -279,6 +331,33 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 8,
   },
+  clientCard: {
+  backgroundColor: '#fff',
+  padding: 15,
+  borderRadius: 12,
+  marginBottom: 15,
+  elevation: 2,
+},
+
+clientName: {
+  fontSize: 20,
+  fontWeight: 'bold',
+  marginBottom: 12,
+},
+
+infoRow: {
+  flexDirection: 'row',
+  marginBottom: 6,
+},
+
+infoLabel: {
+  fontWeight: 'bold',
+  width: 100,
+},
+
+infoValue: {
+  flex: 1,
+},
 
   label: {
     marginTop: 10,
