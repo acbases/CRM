@@ -29,6 +29,7 @@ export default function RootLayout() {
         <Stack.Screen name="rapportRetail" />
         <Stack.Screen name="resultRetail" />
         <Stack.Screen name="scan" />
+        <Stack.Screen name="logout" />
       </Stack>
     </ThemeProvider>
   );

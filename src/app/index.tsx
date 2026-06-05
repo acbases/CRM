@@ -7,15 +7,65 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useRouter } from 'expo-router';
 
-export default function LoginScreen() {
+export default function Index() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
+const [loading, setLoading] = useState(false);
+const [error, setError] = useState('');
 
-  const handleLogin = () => {
-    console.log({ email, password });
-  };
+const handleLogin = async () => {
+  try {
+    setLoading(true);
+    setError('');
+
+    const response = await fetch(
+      'https://allapps.alphaciment.com/crm_back/api/login',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+        }),
+      }
+    );
+
+    const text = await response.text();
+
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      throw new Error('Réponse serveur invalide');
+    }
+
+    if (!response.ok) {
+      throw new Error(data?.message || 'Erreur login');
+    }
+
+    console.log('LOGIN SUCCESS:', data);
+
+    // ✅ SESSION (sans token)
+    await AsyncStorage.setItem('user', JSON.stringify(data));
+
+    router.replace('/newClient');
+    console.log('SESSION DATA:', data);
+
+  } catch (err: any) {
+    console.log('LOGIN ERROR:', err.message);
+    setError(err.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <SafeAreaView style={styles.container}>
@@ -57,9 +107,10 @@ export default function LoginScreen() {
         <TouchableOpacity
           style={styles.button}
           onPress={handleLogin}
+          disabled={loading}
         >
           <Text style={styles.buttonText}>
-            Se connecter
+            {loading ? 'Connexion...' : 'Se connecter'}
           </Text>
         </TouchableOpacity>
       </View>
