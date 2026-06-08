@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import NewCorrespondant from './newCorrespondant';
+import NewCorrespondant from '../components/newCorrespondant';
 
 import {
   SafeAreaView,
@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollView }
 from 'react-native-keyboard-aware-scroll-view';
+import * as Location from 'expo-location';
 
 interface CategorieClient {
   id: number;
@@ -109,6 +110,30 @@ export default function NewClientScreen() {
       },
     ]);
   };
+
+  const getCurrentLocation = async () => {
+  try {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+
+    if (status !== 'granted') {
+      alert('Permission localisation refusée');
+      return;
+    }
+
+    const location = await Location.getCurrentPositionAsync({});
+
+    const lat = location.coords.latitude.toString();
+    const lon = location.coords.longitude.toString();
+
+    setLatitude(lat);
+    setLongitude(lon);
+
+    console.log('LOCATION AUTO:', lat, lon);
+  } catch (err) {
+    console.log('LOCATION ERROR:', err);
+    alert('Impossible de récupérer la position');
+  }
+};
 
   const supprimerFournisseur = (id: number) => {
     if (fournisseurs.length === 1) return;
@@ -434,12 +459,21 @@ export default function NewClientScreen() {
                   onChangeText={setLongitude}
                 />
               </View>
+              
             </View>
 
             <Text style={styles.hint}>
               Coordonnées GPS décimales
               (ex : −18.9137, 47.5361)
             </Text>
+            <TouchableOpacity
+                style={styles.locationBtn}
+                onPress={getCurrentLocation}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>
+                  📍 Utiliser ma position actuelle
+                </Text>
+              </TouchableOpacity>
 
             <View style={styles.field}>
               <Text style={styles.label}>
@@ -915,4 +949,11 @@ suggestionItem: {
     fontWeight: '700',
     textAlign: 'center',
   },
+  locationBtn: {
+  backgroundColor: '#3498db',
+  padding: 12,
+  borderRadius: 12,
+  alignItems: 'center',
+  marginTop: 10,
+},
 });

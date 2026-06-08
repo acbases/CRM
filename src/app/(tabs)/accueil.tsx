@@ -1,465 +1,38 @@
-import React, {useEffect, useState } from 'react';
-import {
-  SafeAreaView,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Image,
-  Platform,
-  ScrollView,
-  Alert,
-  Modal,
-  Pressable,
-} from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import { useLocalSearchParams } from 'expo-router';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
+import { useRouter } from 'expo-router';
 
- interface Correspondant {
-  id: number;
-  idclient: number;
-  idcorrespondant: number;
 
-  correspondant: {
-    id: number;
-    nom: string;
-    poste: string;
-    contact: string;
-  };
-}
-
-interface Visite {
-  id: number;
-
-  idclient: number;
-  idutilisateur: number;
-  idcategorie: number;
-  idtype: number | null;
-
-  date: string; // "2026-04-17 00:00:00"
-
-  statut: number;
-  type: number;
-
-  object: string | null;
-
-  created_at: string | null;
-  updated_at: string | null;
-
-  client: {
-    id: number;
-    nom: string;
-
-    latitude: string;
-    longitude: string;
-
-    zone: string;
-    quartier: string;
-
-    idagence: number;
-    idcategorie: number;
-
-    categorie_client: {
-      id: number;
-      intitule: string;
-    };
-  };
-
-  categorie_visite: {
-    id: number;
-    intitule: string;
-  };
-
-  type_visite: {
-    id: number;
-    nom: string;
-  } | null;
-}
-
-export default function RapportB2BScreen() {
-  const { idVisite } = useLocalSearchParams();
-  const [correpspondant, setCorrespondant] = useState<Correspondant[]>([]);
-  const [modalCorrespondant, setModalCorrespondant] = useState(false);
-  const [selectedCorrespondant, setSelectedCorrespondant] = useState<Correspondant | null>(null);
-  const [visite, setVisite] = useState<Visite | null>(null);
-  console.log('ID VISITE:', idVisite);
-
-  const [description, setDescription] =
-    useState('');
-
-  const [actionAFaire, setActionAFaire] =
-    useState('');
-
-  const [photo, setPhoto] =
-    useState<string | null>(null);
-
-  const [dateRdv, setDateRdv] =
-    useState(new Date());
-
-  const [showPicker, setShowPicker] =
-    useState(false);
-
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-
-  useEffect(() => {
-    fetch(`https://allapps.alphaciment.com/crm_back/api/visite/28`)
-      .then(res => res.json())
-      .then(json => setVisite(json))
-      .catch(err => setError(err.message))
-      .finally(() => setLoading(false));
-  }, []);
-
-  useEffect(() => {
-    if (visite) {
-      fetch(`https://allapps.alphaciment.com/crm_back/api/correspondantClientByIdClient/23`)
-        .then(res => res.json())
-        .then(json => setCorrespondant(Array.isArray(json) ? json : []))
-        .catch(err => setError(err.message))
-        .finally(() => setLoading(false));
-    }
-  }, [visite]);
-
-const pickImage = async () => {
-  Alert.alert(
-    'Photo',
-    'Choisissez une option',
-    [
-      {
-        text: 'Caméra',
-        onPress: openCamera,
-      },
-      {
-        text: 'Galerie',
-        onPress: openGallery,
-      },
-      {
-        text: 'Annuler',
-        style: 'cancel',
-      },
-    ]
-  );
-};
-
-  const openGallery = async () => {
-    try {
-      const permission =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (!permission.granted) {
-        Alert.alert(
-          'Permission refusée',
-          'Autorisez l’accès à la galerie'
-        );
-        return;
-      }
-
-      const result =
-        await ImagePicker.launchImageLibraryAsync({
-          mediaTypes:
-            ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          quality: 0.8,
-        });
-
-      if (!result.canceled) {
-        setPhoto(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-const openCamera = async () => {
-  try {
-    if (Platform.OS === 'web') {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        quality: 0.8,
-      });
-
-      if (!result.canceled) {
-        setPhoto(result.assets[0].uri);
-      }
-
-      return;
-    }
-
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (!permission.granted) {
-      Alert.alert('Permission refusée', 'Autorisez l’accès à la caméra');
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      quality: 0.8,
-    });
-
-    if (!result.canceled) {
-      setPhoto(result.assets[0].uri);
-    }
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-  const onChangeDate = (
-    event: any,
-    selectedDate?: Date
-  ) => {
-    if (selectedDate) {
-      setDateRdv(selectedDate);
-    }
-
-    setShowPicker(false);
-  };
-
-  const handleSubmit = async () => {
-    try {
-      if (!photo) {
-        Alert.alert('Erreur', 'Veuillez ajouter une photo');
-        return;
-      }
-
-      const formData = new FormData();
-
-      formData.append('idvisite', String(28));
-      formData.append('description', description);
-      formData.append('action_a_faire', actionAFaire);
-      formData.append(
-        'prochaine_visite',
-        dateRdv.toISOString().split('T')[0]
-      );
-      // ⚠️ adapte selon ton app
-      formData.append('idcorrespondant',
-        selectedCorrespondant
-          ? String(selectedCorrespondant.correspondant.id)
-          : '');
-
-      // IMAGE FILE
-      const filename = photo.split('/').pop() || 'photo.jpg';
-
-      const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : `image/jpeg`;
-
-      formData.append('sary', {
-        uri: photo,
-        name: filename,
-        type,
-      } as any);
-
-      const response = await fetch(
-        'https://allapps.alphaciment.com/crm_back/api/rapportb2b',
-        {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'Accept': 'application/json',
-            // ❌ NE PAS mettre Content-Type manuellement
-          },
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.log('ERROR API:', data);
-        Alert.alert('Erreur', 'Échec enregistrement');
-        return;
-      }
-
-      console.log('SUCCESS:', data);
-
-      Alert.alert('Succès', 'Rapport enregistré');
-
-      // reset form
-      setDescription('');
-      setActionAFaire('');
-      setPhoto(null);
-      setDateRdv(new Date());
-
-    } catch (error) {
-      console.log('SUBMIT ERROR:', error);
-      Alert.alert('Erreur', 'Erreur serveur');
-    }
-  };
-
+export default function Accueil() {
+  const router = useRouter();
+  const logo = require('../../../assets/logo.png');
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.content}
-      >
-        <Text style={styles.title}>
-          Rapport B2B
+      <View style={styles.content}>
+        <Image source={logo} style={styles.logo} />
+        <Text style={styles.title}>Bienvenue 👋</Text>
+        <Text style={styles.subtitle}>
+          Choisissez une action
         </Text>
 
-        {/* CORRESPONDANT */}
-        <View style={styles.block}>
-          <Text style={styles.label}>Correspondant</Text>
-
-          <TouchableOpacity
-            style={styles.input}
-            onPress={() => setModalCorrespondant(true)}
-          >
-            <Text>
-              {selectedCorrespondant
-                ? `${selectedCorrespondant.correspondant.nom} (${selectedCorrespondant.correspondant.poste})`
-                : 'Sélectionner un correspondant'}
-            </Text>
-          </TouchableOpacity>
-
-          <Modal transparent visible={modalCorrespondant} animationType="slide">
-            <Pressable
-              style={styles.overlay}
-              onPress={() => setModalCorrespondant(false)}
-            >
-              <View style={styles.modal}>
-                <ScrollView>
-                  {correpspondant.map((item) => (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={styles.item}
-                      onPress={() => {
-                        setSelectedCorrespondant(item);
-                        setModalCorrespondant(false);
-                      }}
-                    >
-                      <Text style={{ fontWeight: 'bold' }}>
-                        {item.correspondant.nom}
-                      </Text>
-                      <Text>{item.correspondant.poste}</Text>
-                      <Text>{item.correspondant.contact}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
-            </Pressable>
-          </Modal>
-        </View>
-
-        {/* DESCRIPTION */}
-        <View style={styles.block}>
-          <Text style={styles.label}>
-            Description
-          </Text>
-          <Text>Visite ID : 28</Text>
-          <Text>Client ID : 23</Text>
-          <TextInput
-            style={styles.textArea}
-            multiline
-            placeholder="Saisir description..."
-            value={description}
-            onChangeText={setDescription}
-          />
-        </View>
-
-        {/* ACTION */}
-        <View style={styles.block}>
-          <Text style={styles.label}>
-            Action à faire
-          </Text>
-
-          <TextInput
-            style={styles.textArea}
-            multiline
-            placeholder="Saisir action..."
-            value={actionAFaire}
-            onChangeText={setActionAFaire}
-          />
-        </View>
-
-        {/* PHOTO */}
-        <View style={styles.block}>
-          <Text style={styles.label}>
-            Importer photo
-          </Text>
-
-          <TouchableOpacity
-            style={styles.uploadBtn}
-            onPress={pickImage}
-          >
-            <Text style={styles.uploadText}>
-              📷 Choisir une photo
-            </Text>
-          </TouchableOpacity>
-
-          {photo && (
-            <Image
-              source={{ uri: photo }}
-              style={styles.image}
-            />
-          )}
-        </View>
-
-        {/* DATE RDV */}
-        <View style={styles.block}>
-          <Text style={styles.label}>
-            Prochain rendez-vous
-          </Text>
-
-          {Platform.OS !== 'web' ? (
-            <>
-              <TouchableOpacity
-                style={styles.input}
-                onPress={() =>
-                  setShowPicker(true)
-                }
-              >
-                <Text>
-                  {dateRdv.toLocaleDateString(
-                    'fr-FR'
-                  )}
-                </Text>
-              </TouchableOpacity>
-
-              {showPicker && (
-                <DateTimePicker
-                  value={dateRdv}
-                  mode="date"
-                  display="calendar"
-                  onChange={onChangeDate}
-                />
-              )}
-            </>
-          ) : (
-            <input
-              type="date"
-              style={{
-                padding: 12,
-                borderRadius: 10,
-                border: '1px solid #ddd',
-                width: '100%',
-              }}
-              value={
-                dateRdv
-                  .toISOString()
-                  .split('T')[0]
-              }
-              onChange={(e) =>
-                setDateRdv(
-                  new Date(e.target.value)
-                )
-              }
-            />
-          )}
-        </View>
-
-        {/* BTN */}
+        {/* VISITE */}
         <TouchableOpacity
-          style={styles.btn}
-          onPress={handleSubmit}
+          style={[styles.button, styles.visite]}
+          onPress={() => router.push('/planning')}
         >
-          <Text style={styles.btnText}>
-            ✓ Enregistrer
-          </Text>
+          <Text style={styles.buttonText}>📍 Visite</Text>
         </TouchableOpacity>
-      </ScrollView>
+
+        {/* PROSPECTION */}
+        <TouchableOpacity
+          style={[styles.button, styles.prospection]}
+          onPress={() => router.push('/newClient')}
+        >
+          <Text style={styles.buttonText}>🔎 Prospection</Text>
+        </TouchableOpacity>
+
+      </View>
     </SafeAreaView>
   );
 }
@@ -470,93 +43,50 @@ const styles = StyleSheet.create({
     backgroundColor: '#f5f5f5',
   },
 
-  modal: {
-  backgroundColor: '#fff',
-  borderRadius: 12,
-  padding: 20,
-  maxHeight: '80%',
-},
-
-overlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0,0,0,0.4)',
-  justifyContent: 'center',
-  padding: 20,
-},
-
-item: {
-  padding: 12,
-  borderBottomWidth: 1,
-  borderBottomColor: '#eee',
-},
-
   content: {
-    padding: 20,
+    flex: 1,
+    justifyContent: 'center',
+    paddingHorizontal: 20,
   },
 
   title: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 20,
+    fontSize: 26,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
+  logo: {
+  width: 120,
+  height: 120,
+  resizeMode: 'contain',
+  alignSelf: 'center',
+  marginBottom: 20,
+},
 
-  block: {
-    marginBottom: 20,
-  },
-
-  label: {
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-
-  input: {
-    backgroundColor: '#fff',
-    padding: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-  },
-
-  textArea: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 15,
-    minHeight: 120,
-    textAlignVertical: 'top',
-  },
-
-  uploadBtn: {
-    backgroundColor: '#d71f27',
-    padding: 14,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-
-  uploadText: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-
-  image: {
-    width: '100%',
-    height: 220,
-    borderRadius: 16,
-    marginTop: 15,
-  },
-
-  btn: {
-    backgroundColor: '#d71f27',
-    padding: 16,
-    borderRadius: 12,
+  subtitle: {
+    textAlign: 'center',
+    color: '#6b7280',
+    marginBottom: 40,
     marginTop: 10,
   },
 
-  btnText: {
+  button: {
+    paddingVertical: 18,
+    borderRadius: 14,
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+
+  visite: {
+    backgroundColor: '#e74c3c',
+  },
+
+  prospection: {
+    backgroundColor: '#3498db',
+  },
+
+  buttonText: {
     color: '#fff',
-    textAlign: 'center',
-    fontWeight: '700',
-    fontSize: 16,
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });

@@ -455,7 +455,38 @@ const handleSubmit = async () => {
       >
 
         <Text style={styles.title}>Rapport Retail</Text>
-        <Text>Id visite: {idVisite}</Text>
+        {/* <Text>Id visite: {idVisite}</Text> */}
+        <View style={styles.clientCard}>
+        <Text style={styles.clientTitle}>👤 Informations client</Text>
+
+        <Text style={styles.clientText}>
+            Nom: {visite?.client?.nom || '—'}
+        </Text>
+
+        <Text style={styles.clientText}>
+            Zone: {visite?.client?.zone || '—'}
+        </Text>
+
+        <Text style={styles.clientText}>
+            Quartier: {visite?.client?.quartier || '—'}
+        </Text>
+
+        <Text style={styles.clientText}>
+            Catégorie: {visite?.client?.categorie_client?.intitule || '—'}
+        </Text>
+
+        <Text style={styles.clientText}>
+            Agence: {visite?.client?.agence?.intitule || '—'}
+        </Text>
+
+        {/* <Text style={styles.clientText}>
+            Coordonnées: {visite?.client?.latitude}, {visite?.client?.longitude}
+        </Text>
+
+        <Text style={styles.clientText}>
+            QR Code: {visite?.client?.status_qrcode ? 'Activé' : 'Désactivé'}
+        </Text> */}
+        </View>
 
         {/* PRODUITS */}
         <Text style={styles.section}>Produits</Text>
@@ -702,4 +733,23 @@ debugText: {
   name: {
     fontWeight: 'bold',
   },
+  clientCard: {
+  backgroundColor: '#fff',
+  padding: 15,
+  borderRadius: 12,
+  marginTop: 10,
+  elevation: 3,
+},
+
+clientTitle: {
+  fontSize: 16,
+  fontWeight: 'bold',
+  marginBottom: 10,
+},
+
+clientText: {
+  fontSize: 14,
+  marginTop: 4,
+  color: '#333',
+},
 });

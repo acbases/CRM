@@ -30,6 +30,7 @@ export default function RootLayout() {
         <Stack.Screen name="resultRetail" />
         <Stack.Screen name="scan" />
         <Stack.Screen name="logout" />
+        <Stack.Screen name="clientDetails" />
       </Stack>
     </ThemeProvider>
   );

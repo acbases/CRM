@@ -4,10 +4,6 @@ import { useRouter,useFocusEffect } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
 
 
-
-
-
-
 interface Visite {
   id: number;
 
@@ -125,7 +121,7 @@ useFocusEffect(
             : isB2B
               ? '/resultB2B'
               : '/resultRetail';
-              
+
         router.push({
           pathname: route,
           params: {

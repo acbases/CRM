@@ -19,6 +19,7 @@ import {
 import { useRouter } from 'expo-router';
 import { KeyboardAwareScrollView }
 from 'react-native-keyboard-aware-scroll-view';
+import NewCorrespondant from './components/newCorrespondant';
 
  interface Correspondant {
   id: number;
@@ -87,6 +88,7 @@ export default function RapportB2BScreen() {
   const [modalCorrespondant, setModalCorrespondant] = useState(false);
   const [selectedCorrespondant, setSelectedCorrespondant] = useState<Correspondant | null>(null);
   const [visite, setVisite] = useState<Visite | null>(null);
+  const [showCorrespondant, setShowCorrespondant] = useState(false);
   console.log('ID VISITE:', idVisite);
 
   const [description, setDescription] =
@@ -360,21 +362,96 @@ const handleSubmit = async () => {
         <Text style={styles.title}>
           Rapport B2B
         </Text>
+        {/* INFOS CLIENT */}
+        {visite?.client && (
+          <View style={styles.clientCard}>
+            <Text style={styles.clientTitle}>
+              Informations du client
+            </Text>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Nom :</Text>
+              <Text style={styles.infoValue}>
+                {visite.client.nom}
+              </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Catégorie :</Text>
+              <Text style={styles.infoValue}>
+                {visite.client.categorie_client?.intitule || '-'}
+              </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Zone :</Text>
+              <Text style={styles.infoValue}>
+                {visite.client.zone || '-'}
+              </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Quartier :</Text>
+              <Text style={styles.infoValue}>
+                {visite.client.quartier || '-'}
+              </Text>
+            </View>
+
+            {/* <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Date visite :</Text>
+              <Text style={styles.infoValue}>
+                {visite.date?.split(' ')[0] || '-'}
+              </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Nature :</Text>
+              <Text style={styles.infoValue}>
+                {visite.categorie_visite?.intitule || '-'}
+              </Text>
+            </View>
+
+            <View style={styles.infoRow}>
+              <Text style={styles.infoLabel}>Type visite :</Text>
+              <Text style={styles.infoValue}>
+                {visite.type_visite?.nom || '-'}
+              </Text>
+            </View>
+
+            {visite.object && (
+              <View style={styles.infoColumn}>
+                <Text style={styles.infoLabel}>Objectif :</Text>
+                <Text style={styles.infoValue}>
+                  {visite.object}
+                </Text>
+              </View>
+            )} */}
+          </View>
+        )}
 
         {/* CORRESPONDANT */}
         <View style={styles.block}>
           <Text style={styles.label}>Correspondant</Text>
 
-          <TouchableOpacity
-            style={styles.input}
-            onPress={() => setModalCorrespondant(true)}
-          >
-            <Text>
-              {selectedCorrespondant
-                ? `${selectedCorrespondant.correspondant.nom} (${selectedCorrespondant.correspondant.poste})`
-                : 'Sélectionner un correspondant'}
-            </Text>
-          </TouchableOpacity>
+          <View style={styles.row}>
+            <TouchableOpacity
+              style={[styles.input, { flex: 1 }]}
+              onPress={() => setModalCorrespondant(true)}
+            >
+              <Text>
+                {selectedCorrespondant
+                  ? `${selectedCorrespondant.correspondant.nom} (${selectedCorrespondant.correspondant.poste})`
+                  : 'Sélectionner un correspondant'}
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.addBtn}
+              onPress={() => setShowCorrespondant(true)}
+            >
+              <Text style={styles.addBtnText}>+</Text>
+            </TouchableOpacity>
+          </View>
 
           <Modal transparent visible={modalCorrespondant} animationType="slide">
             <Pressable
@@ -410,8 +487,8 @@ const handleSubmit = async () => {
           <Text style={styles.label}>
             Description
           </Text>
-          <Text>Visite ID : {idVisite}</Text>
-          <Text>Client ID : {visite?.client?.id}</Text>
+          {/* <Text>Visite ID : {idVisite}</Text>
+          <Text>Client ID : {visite?.client?.id}</Text> */}
           <TextInput
             style={styles.textArea}
             multiline
@@ -523,6 +600,22 @@ const handleSubmit = async () => {
         </TouchableOpacity>
       </ScrollView>
       </KeyboardAwareScrollView>
+      <NewCorrespondant
+        visible={showCorrespondant}
+        idclient={visite?.idclient ?? null}
+        onClose={() => setShowCorrespondant(false)}
+        onSave={async () => {
+          setShowCorrespondant(false);
+
+          const response = await fetch(
+            `https://allapps.alphaciment.com/crm_back/api/correspondantClientByIdClient/${visite?.client?.id}`
+          );
+
+          const json = await response.json();
+
+          setCorrespondant(Array.isArray(json) ? json : []);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -622,4 +715,60 @@ item: {
     fontWeight: '700',
     fontSize: 16,
   },
+  row: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 10,
+},
+
+addBtn: {
+  width: 50,
+  height: 50,
+  borderRadius: 12,
+  backgroundColor: '#d71f27',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+addBtnText: {
+  color: '#fff',
+  fontSize: 28,
+  fontWeight: 'bold',
+},
+clientCard: {
+  backgroundColor: '#fff',
+  padding: 16,
+  borderRadius: 12,
+  marginBottom: 20,
+  borderLeftWidth: 4,
+  borderLeftColor: '#d71f27',
+  elevation: 2,
+},
+
+clientTitle: {
+  fontSize: 18,
+  fontWeight: '700',
+  marginBottom: 12,
+  color: '#d71f27',
+},
+
+infoRow: {
+  flexDirection: 'row',
+  marginBottom: 8,
+},
+
+infoColumn: {
+  marginTop: 8,
+},
+
+infoLabel: {
+  width: 110,
+  fontWeight: '600',
+  color: '#555',
+},
+
+infoValue: {
+  flex: 1,
+  color: '#111',
+},
 });
