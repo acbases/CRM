@@ -3,10 +3,12 @@ import React from 'react';
 import { useColorScheme } from 'react-native';
 
 import { Colors } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
 
 export default function AppTabs() {
   const scheme = useColorScheme();
   const colors = Colors[scheme === 'unspecified' ? 'light' : scheme];
+  const { user } = useAuth();
 
   return (
     <NativeTabs
@@ -37,7 +39,7 @@ export default function AppTabs() {
           renderingMode="template"
         />
       </NativeTabs.Trigger>
-
+      {user?.role_crm === 'admin' && (
       <NativeTabs.Trigger name="allVisite">
         <NativeTabs.Trigger.Label>Toutes les visites</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
@@ -45,6 +47,7 @@ export default function AppTabs() {
           renderingMode="template"
         />
       </NativeTabs.Trigger>
+      )}
 
       <NativeTabs.Trigger name="newVisite">
         <NativeTabs.Trigger.Label>Nouvelle Visite </NativeTabs.Trigger.Label>
