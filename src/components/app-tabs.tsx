@@ -37,13 +37,14 @@ export default function AppTabs() {
           renderingMode="template"
         />
       </NativeTabs.Trigger>
-      {/* <NativeTabs.Trigger name="accueil">
-        <NativeTabs.Trigger.Label>Rapport B2B</NativeTabs.Trigger.Label>
+
+      <NativeTabs.Trigger name="allVisite">
+        <NativeTabs.Trigger.Label>Toutes les visites</NativeTabs.Trigger.Label>
         <NativeTabs.Trigger.Icon
           src={require('@/assets/images/tabIcons/explore.png')}
           renderingMode="template"
         />
-      </NativeTabs.Trigger> */}
+      </NativeTabs.Trigger>
 
       <NativeTabs.Trigger name="newVisite">
         <NativeTabs.Trigger.Label>Nouvelle Visite </NativeTabs.Trigger.Label>

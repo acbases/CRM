@@ -7,18 +7,19 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Image } from 'react-native';
+import { useAuth } from '../context/AuthContext';
 
 
 export default function Index() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const { login } = useAuth();
   const router = useRouter();
-const [loading, setLoading] = useState(false);
-const [error, setError] = useState('');
 
 const handleLogin = async () => {
   try {
@@ -56,7 +57,7 @@ const handleLogin = async () => {
     console.log('LOGIN SUCCESS:', data);
 
     // ✅ SESSION (sans token)
-    await AsyncStorage.setItem('user', JSON.stringify(data));
+    await login(data);
 
     router.replace('/accueil');
     console.log('SESSION DATA:', data);

@@ -13,6 +13,7 @@ import {
   Alert,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { useAuth } from '@/context/AuthContext';
 
 
 
@@ -86,6 +87,8 @@ export default function NewVisiteScreen() {
   const [agenceClientId, setAgenceClientId] = useState<number | null>(null);
   const [clientId, setClientId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  console.log('USER ID:', user?.id);
 
 const addLog = (title: string, data?: any) => {
   const msg =
@@ -173,12 +176,16 @@ useEffect(() => {
         Alert.alert('Erreur', 'Veuillez sélectionner un client valide');
         return;
       }
+      if (!user?.id) {
+        Alert.alert('Erreur', 'Utilisateur non connecté');
+        return;
+      }
   try {
     addLog('SUBMIT START');
 
     const body = {
       idclient: clientId,
-      idutilisateur: 3,
+      idutilisateur: user.id,
       idcategorie: motifVisiteId,
       date: formatDate(date),
       statut: 0,
@@ -224,6 +231,32 @@ useEffect(() => {
     }
 
     addLog('SUCCESS');
+
+    // RESET FORM
+  setClient('');
+  setClientId(null);
+
+  setMotifVisite('');
+  setMotifVisiteId(null);
+
+  setTypeVisite('');
+  setTypeVisiteId(null);
+
+  setTypeClient('');
+  setTypeClientId(null);
+
+  setAgenceClient('');
+  setAgenceClientId(null);
+
+  setObjectif('');
+  setAcquisiteur('');
+
+  // reset date
+  setDate(new Date());
+
+  // UI state
+  setShowClientList(false);
+
 
     Alert.alert('Succès', 'Visite enregistrée avec succès');
 

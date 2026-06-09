@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
 import { useRouter,useFocusEffect } from 'expo-router';
 import { TouchableOpacity } from 'react-native';
-import { useAuth } from '@/context/AuthContext';
+
 
 
 interface Visite {
@@ -60,21 +60,46 @@ export default function Planning() {
 const [page, setPage] = useState(1);
 const [loadingMore, setLoadingMore] = useState(false);
 const [hasMore, setHasMore] = useState(true);
-const { user } = useAuth();
-console.log('USER ID:', user?.id);
 
+
+const [users, setUsers] = useState<Record<number, any>>({});
+
+const fetchUser = async (id: number) => {
+  try {
+    const res = await fetch(
+      `https://allapps.alphaciment.com/crm_back/api/user/${id}`
+    );
+    const json = await res.json();
+    return json;
+  } catch (err) {
+    console.log('USER FETCH ERROR:', err);
+    return null;
+  }
+};
+const loadUsersForVisites = async (visitesList: Visite[]) => {
+  const uniqueIds = [...new Set(visitesList.map(v => v.idutilisateur))];
+
+  const results: Record<number, any> = {};
+
+  await Promise.all(
+    uniqueIds.map(async (id) => {
+      const user = await fetchUser(id);
+      if (user) results[id] = user;
+    })
+  );
+
+  setUsers(results);
+};
 
 const loadVisites = async () => {
   try {
-    if (!user?.id) {
-      console.log('USER ID non disponible');
-      return;
-    }
     const res = await fetch(
-      `https://allapps.alphaciment.com/crm_back/api/visiteByIdUtilisateur/${user?.id}`
+      `https://allapps.alphaciment.com/crm_back/api/visite`
     );
 
     const json = await res.json();
+
+    console.log('VISITES LOADED:', json);
 
     if (Array.isArray(json)) {
       const sorted = [...json].sort(
@@ -84,6 +109,10 @@ const loadVisites = async () => {
       );
 
       setVisites(sorted);
+
+      // 🔥 charger users après visites
+      loadUsersForVisites(sorted);
+
     } else {
       setVisites([]);
     }
@@ -95,10 +124,8 @@ const loadVisites = async () => {
 
 useFocusEffect(
   useCallback(() => {
-    
-      loadVisites();
-
-  }, [user])
+  loadVisites();
+  }, [])
 );
 
   const today = new Date().toISOString().split('T')[0];
@@ -151,6 +178,10 @@ useFocusEffect(
         </Text>
 
         <Text>
+            👤 Commercial : {users[item.idutilisateur]?.name} {users[item.idutilisateur]?.firstname ?? 'Chargement...'}
+        </Text>
+
+        <Text>
           {item.client.categorie_client.intitule}
         </Text>
 
@@ -159,10 +190,6 @@ useFocusEffect(
         <Text>
           Quartier : {item.client.quartier}
         </Text>
-
-        {/* <Text>
-          Utilisateur : {item.client.nom}
-        </Text> */}
 
         <Text>
           Date : {item.date.split(' ')[0]}

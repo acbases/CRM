@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Image } from 'react-native';
 import { useRouter } from 'expo-router';
+import { useAuth } from '@/context/AuthContext';
 
 
 export default function Accueil() {
   const router = useRouter();
   const logo = require('../../../assets/logo.png');
+  const { logout } = useAuth();
 
   return (
     <SafeAreaView style={styles.container}>
@@ -30,6 +32,11 @@ export default function Accueil() {
           onPress={() => router.push('/newClient')}
         >
           <Text style={styles.buttonText}>🔎 Prospection</Text>
+        </TouchableOpacity>
+        
+
+        <TouchableOpacity onPress={logout}>
+          <Text>Se déconnecter</Text>
         </TouchableOpacity>
 
       </View>

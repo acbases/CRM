@@ -15,8 +15,10 @@ import { ThemedText } from './themed-text';
 import { ThemedView } from './themed-view';
 
 import { Colors, MaxContentWidth, Spacing } from '@/constants/theme';
+import { useAuth } from '@/context/AuthContext';
 
 export default function AppTabs() {
+  const { user } = useAuth();
   return (
     <Tabs>
       <TabSlot style={{ height: '100%' }} />
@@ -28,21 +30,12 @@ export default function AppTabs() {
           <TabTrigger name="accueil" href="/accueil" asChild>
             <TabButton>Home</TabButton>
           </TabTrigger>
-          {/* <TabTrigger name="explore" href="/explore" asChild>
-            <TabButton>Explore</TabButton>
-          </TabTrigger> */}
-          {/* <TabTrigger name="login" href="/login" asChild>
-            <TabButton>Connexion</TabButton>
-          </TabTrigger>
-          <TabTrigger name="formulaire" href="/formulaire" asChild>
-            <TabButton>Formulaire</TabButton>
-          </TabTrigger> */}
-          <TabTrigger name="newClient" href="/newClient" asChild>
-            <TabButton>Nouveau Client </TabButton>
-          </TabTrigger>
-          {/* <TabTrigger name="accueil" href="/accueil" asChild>
-            <TabButton>Rapport B2B</TabButton>
-          </TabTrigger> */}
+          {/* 🔐 condition admin */}
+          {user?.role_crm === 'admin' && (
+            <TabTrigger name="allVisite" href="/allVisite" asChild>
+              <TabButton>Toutes les visites</TabButton>
+            </TabTrigger>
+          )}
           <TabTrigger name="newVisite" href="/newVisite" asChild>
             <TabButton>Nouvelle Visite </TabButton>
           </TabTrigger>

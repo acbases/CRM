@@ -8,11 +8,13 @@ import {
   TouchableOpacity,
   Linking,
   Alert,
+  Platform 
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import NewCorrespondant from './components/newCorrespondant';
 import NewFournisseur from './components/newFournisseur';
 import EditCorrespondant from './components/editCorrespondant';
+import EditFournisseur from './components/editFournisseur';
 
 type Client = {
   id: number;
@@ -48,7 +50,9 @@ export default function ClientDetails() {
   const [showFournisseur, setShowFournisseur] = useState(false);
   const [selectedCorrespondant, setSelectedCorrespondant] = useState<any>(null);
   const [editVisible, setEditVisible] = useState(false);
-const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [editVisibleF, setEditVisibleF] = useState(false);
+  const [selectedIdF, setSelectedIdF] = useState<number | null>(null);
 
     const fetchFournisseurs = async () => {
     try {
@@ -171,30 +175,92 @@ const [selectedId, setSelectedId] = useState<number | null>(null);
 {correspondants.length === 0 ? (
   <Text style={styles.empty}>Aucun correspondant</Text>
 ) : (
-  correspondants.map((item) => (
-    <View key={item.id} style={styles.itemCard}>
-      <Text style={styles.itemText}>
-        👤 {item.correspondant?.nom}
-      </Text>
+correspondants.map((item) => (
+  <View key={item.id} style={styles.itemCard}>
+    <Text style={styles.itemText}>
+      👤 {item.correspondant?.nom}
+    </Text>
 
-      <Text style={styles.subText}>
-        💼 {item.correspondant?.poste}
-      </Text>
+    <Text style={styles.subText}>
+      💼 {item.correspondant?.poste}
+    </Text>
 
-      <Text style={styles.subText}>
-        📞 {item.correspondant?.contact}
-      </Text>
-        {/* EDIT BUTTON */}
-         <TouchableOpacity
-            style={styles.editButton}
-            onPress={() => {
-            setSelectedId(item.correspondant?.id);
-            setEditVisible(true);
-            }}
-        >
-            <Text style={styles.editButtonText}>✏️ Modifier</Text>
-        </TouchableOpacity>
+    <Text style={styles.subText}>
+      📞 {item.correspondant?.contact}
+    </Text>
+
+    <View style={styles.actionRow}>
+      <TouchableOpacity
+        style={styles.editButton}
+        onPress={() => {
+          setSelectedId(item.correspondant?.id);
+          setEditVisible(true);
+        }}
+      >
+        <Text style={styles.editButtonText}>
+          ✏️ Modifier
+        </Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+  style={styles.deleteButton}
+onPress={() => {
+  console.log('BOUTON DELETE CLIQUÉ');
+
+  const deleteCorrespondant = async () => {
+    try {
+      const response = await fetch(
+        `https://allapps.alphaciment.com/crm_back/api/correspondantClient/${item.id}`,
+        {
+          method: 'DELETE',
+          headers: {
+            Accept: 'application/json',
+          },
+        }
+      );
+
+      const text = await response.text();
+      console.log('STATUS:', response.status);
+      console.log('RESPONSE:', text);
+
+      if (!response.ok) {
+        Alert.alert('Erreur', text || 'Suppression impossible');
+        return;
+      }
+
+      fetchCorrespondants(); // refresh list
+      Alert.alert('Succès', 'Supprimé avec succès');
+    } catch (err) {
+      console.log('DELETE ERROR:', err);
+      Alert.alert('Erreur', 'Erreur lors de la suppression');
+    }
+  };
+
+  if (Platform.OS === 'web') {
+    const ok = window.confirm('Supprimer ce correspondant ?');
+    if (ok) deleteCorrespondant();
+  } else {
+    Alert.alert(
+      'Suppression',
+      'Supprimer ce correspondant ?',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Supprimer',
+          style: 'destructive',
+          onPress: deleteCorrespondant,
+        },
+      ]
+    );
+  }
+}}
+>
+  <Text style={styles.deleteButtonText}>
+    🗑️ Supprimer
+  </Text>
+</TouchableOpacity>
     </View>
+  </View>
   ))
 )}
 <View style={styles.sectionHeader}>
@@ -217,16 +283,75 @@ const [selectedId, setSelectedId] = useState<number | null>(null);
         🏭 {item.fournisseur?.nom || 'Sans nom'}
         
       </Text>
+      <View style={styles.actionRow}>
       {/* EDIT BUTTON */}
         <TouchableOpacity
             style={styles.editButton}
             onPress={() => {
-            setSelectedCorrespondant(item);
-            setShowCorrespondant(true);
+            setSelectedIdF(item.fournisseur?.id);
+            setEditVisibleF(true);
             }}
         >
             <Text style={styles.editButtonText}>✏️ Modifier</Text>
         </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={() => {
+            console.log('BOUTON DELETE FOURNISSEUR CLIQUÉ');
+
+            const deleteFournisseur = async () => {
+              try {
+                const response = await fetch(
+                  `https://allapps.alphaciment.com/crm_back/api/fournisseurClient/${item.id}`,
+                  {
+                    method: 'DELETE',
+                    headers: {
+                      Accept: 'application/json',
+                    },
+                  }
+                );
+
+                const text = await response.text();
+                console.log('STATUS:', response.status);
+                console.log('RESPONSE:', text);
+
+                if (!response.ok) {
+                  Alert.alert('Erreur', text || 'Suppression impossible');
+                  return;
+                }
+
+                Alert.alert('Succès', 'Fournisseur supprimé');
+                fetchFournisseurs(); // refresh list
+              } catch (err) {
+                console.log('DELETE FOURNISSEUR ERROR:', err);
+                Alert.alert('Erreur', 'Erreur lors de la suppression');
+              }
+            };
+
+            if (Platform.OS === 'web') {
+              const ok = window.confirm('Supprimer ce fournisseur ?');
+              if (ok) deleteFournisseur();
+            } else {
+              Alert.alert(
+                'Suppression',
+                'Supprimer ce fournisseur ?',
+                [
+                  { text: 'Annuler', style: 'cancel' },
+                  {
+                    text: 'Supprimer',
+                    style: 'destructive',
+                    onPress: deleteFournisseur,
+                  },
+                ]
+              );
+            }
+          }}
+        >
+          <Text style={styles.deleteButtonText}>
+            🗑️ Supprimer
+          </Text>
+        </TouchableOpacity>
+    </View>
     </View>
   ))
 )}
@@ -239,51 +364,57 @@ const [selectedId, setSelectedId] = useState<number | null>(null);
         </TouchableOpacity>
       </View>
       <NewCorrespondant
-  visible={showCorrespondant}
-  idclient={client?.id ?? null}
-  onClose={() => setShowCorrespondant(false)}
-  onSave={async () => {
-    setShowCorrespondant(false);
+        visible={showCorrespondant}
+        idclient={client?.id ?? null}
+        onClose={() => setShowCorrespondant(false)}
+        onSave={async () => {
+          setShowCorrespondant(false);
 
-    try {
-      const response = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/correspondantClientByIdClient/${client?.id}`
-      );
+          try {
+            const response = await fetch(
+              `https://allapps.alphaciment.com/crm_back/api/correspondantClientByIdClient/${client?.id}`
+            );
 
-      const json = await response.json();
+            const json = await response.json();
 
-      setCorrespondants(Array.isArray(json) ? json : []);
-    } catch (err) {
-      console.log('REFRESH CORRESPONDANTS ERROR:', err);
-    }
-  }}
-/>
+            setCorrespondants(Array.isArray(json) ? json : []);
+          } catch (err) {
+            console.log('REFRESH CORRESPONDANTS ERROR:', err);
+          }
+        }}
+      />
       <NewFournisseur
-  visible={showFournisseur}
-  idclient={client?.id ?? null}
-  onClose={() => setShowFournisseur(false)}
-  onSave={async () => {
-    setShowFournisseur(false);
+      visible={showFournisseur}
+      idclient={client?.id ?? null}
+      onClose={() => setShowFournisseur(false)}
+      onSave={async () => {
+        setShowFournisseur(false);
 
-    try {
-      const response = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/fournisseurClientByIdClient/${client?.id}`
-      );
+        try {
+          const response = await fetch(
+            `https://allapps.alphaciment.com/crm_back/api/fournisseurClientByIdClient/${client?.id}`
+          );
 
-      const json = await response.json();
+          const json = await response.json();
 
-      setFournisseurs(Array.isArray(json) ? json : []);
-    } catch (err) {
-      console.log('REFRESH FOURNISSEURS ERROR:', err);
-    }
-  }}
-/>
-<EditCorrespondant
-  visible={editVisible}
-  idcorrespondant={selectedId}
-  onClose={() => setEditVisible(false)}
-  onSave={fetchCorrespondants}
-/>
+          setFournisseurs(Array.isArray(json) ? json : []);
+        } catch (err) {
+          console.log('REFRESH FOURNISSEURS ERROR:', err);
+        }
+      }}
+    />
+    <EditCorrespondant
+      visible={editVisible}
+      idcorrespondant={selectedId}
+      onClose={() => setEditVisible(false)}
+      onSave={fetchCorrespondants}
+    />
+    <EditFournisseur
+      visible={editVisibleF}
+      idfournisseur={selectedIdF}
+      onClose={() => setEditVisibleF(false)}
+      onSave={fetchFournisseurs}
+    />
     </SafeAreaView>
   );
 }
@@ -319,6 +450,25 @@ const styles = StyleSheet.create({
     marginTop: 6,
     color: '#333',
   },
+  actionRow: {
+  flexDirection: 'row',
+  justifyContent: 'flex-end',
+  gap: 8,
+  marginTop: 8,
+},
+
+deleteButton: {
+  backgroundColor: '#ef4444',
+  paddingHorizontal: 10,
+  paddingVertical: 6,
+  borderRadius: 8,
+},
+
+deleteButtonText: {
+  color: '#fff',
+  fontSize: 12,
+  fontWeight: '600',
+},
 
   badgeContainer: {
     marginTop: 15,
