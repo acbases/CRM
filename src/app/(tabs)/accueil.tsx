@@ -47,7 +47,7 @@ const ACTIONS: ActionItem[] = [
   },
   {
     title: 'Nouvelle Visite',
-    desc: 'Planifier une nouvelle visite',
+    desc: ' *Visite non planifiée',
     icon: 'calendar-outline',
     bg: C.grey,
     route: '/newVisite',
