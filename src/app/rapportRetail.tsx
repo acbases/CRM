@@ -475,9 +475,9 @@ const handleSubmit = async () => {
             Catégorie: {visite?.client?.categorie_client?.intitule || '—'}
         </Text>
 
-        <Text style={styles.clientText}>
+        {/* <Text style={styles.clientText}>
             Agence: {visite?.client?.agence?.intitule || '—'}
-        </Text>
+        </Text> */}
 
         {/* <Text style={styles.clientText}>
             Coordonnées: {visite?.client?.latitude}, {visite?.client?.longitude}
