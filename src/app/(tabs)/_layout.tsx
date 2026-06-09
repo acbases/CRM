@@ -1,5 +1,5 @@
-import AppTabs from '@/components/app-tabs';
+import DrawerNavigator from '@/components/DrawerNavigator';
 
 export default function TabsLayout() {
-  return <AppTabs />;
+  return <DrawerNavigator />;
 }

@@ -17,6 +17,7 @@ import {
 import { KeyboardAwareScrollView }
 from 'react-native-keyboard-aware-scroll-view';
 import * as Location from 'expo-location';
+import { Ionicons } from '@expo/vector-icons';
 
 interface CategorieClient {
   id: number;
@@ -360,9 +361,11 @@ export default function NewClientScreen() {
             {/* HEADER */}
             <View style={styles.header}>
               <View style={styles.headerIcon}>
-                <Text style={styles.headerIconText}>
-                  👤
-                </Text>
+                <Ionicons
+                  name="person-outline"
+                  size={26}
+                  color="#FFFFFF"
+                />
               </View>
 
               <View style={{ flex: 1 }}>
@@ -370,8 +373,7 @@ export default function NewClientScreen() {
                   Nouveau client
                 </Text>
                 <Text style={styles.subtitle}>
-                  Renseignez les informations du
-                  client
+                  Renseignez les informations du client
                 </Text>
               </View>
             </View>
@@ -470,8 +472,9 @@ export default function NewClientScreen() {
                 style={styles.locationBtn}
                 onPress={getCurrentLocation}
               >
+                <Ionicons name="locate-outline" size={16} color="#fff" style={{ marginRight: 8 }} />
                 <Text style={{ color: '#fff', fontWeight: 'bold' }}>
-                  📍 Utiliser ma position actuelle
+                  Utiliser ma position actuelle
                 </Text>
               </TouchableOpacity>
 
@@ -599,10 +602,9 @@ export default function NewClientScreen() {
               style={styles.submitButton}
               onPress={handleSubmit}
             >
-              <Text
-                style={styles.submitButtonText}
-              >
-                ✓ Enregistrer
+              <Ionicons name="checkmark-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
+              <Text style={styles.submitButtonText}>
+                Enregistrer
               </Text>
             </TouchableOpacity>
           </View>
@@ -717,7 +719,7 @@ export default function NewClientScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F5F5F7',
   },
 
   container: {
@@ -741,18 +743,14 @@ const styles = StyleSheet.create({
     width: 55,
     height: 55,
     borderRadius: 16,
-    backgroundColor: '#d71f27',
+    backgroundColor: '#EF2D24',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
 
-  headerIconText: {
-    fontSize: 24,
-  },
-
-    addButton: {
-    backgroundColor: '#d71f27',
+  addButton: {
+    backgroundColor: '#EF2D24',
     padding: 10,
     borderRadius: 10,
   },
@@ -793,7 +791,7 @@ suggestionItem: {
   },
 
   sectionLabel: {
-    color: '#d71f27',
+    color: '#EF2D24',
     fontWeight: '700',
     marginBottom: 16,
   },
@@ -895,11 +893,13 @@ suggestionItem: {
   },
 
   submitButton: {
-    backgroundColor: '#d71f27',
+    backgroundColor: '#EF2D24',
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: 'center',
     marginTop: 10,
+    flexDirection: 'row',
+    justifyContent: 'center',
   },
 
   submitButtonText: {
@@ -950,10 +950,12 @@ suggestionItem: {
     textAlign: 'center',
   },
   locationBtn: {
-  backgroundColor: '#3498db',
+  backgroundColor: '#88898E',
   padding: 12,
   borderRadius: 12,
   alignItems: 'center',
   marginTop: 10,
+  flexDirection: 'row',
+  justifyContent: 'center',
 },
 });

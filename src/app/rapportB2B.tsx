@@ -1,6 +1,6 @@
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
-import { useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
@@ -8,24 +8,32 @@ import {
   Modal,
   Platform,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
-import { KeyboardAwareScrollView }
-from 'react-native-keyboard-aware-scroll-view';
+import { Ionicons } from '@expo/vector-icons';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import PageHeader from '@/components/PageHeader';
 import NewCorrespondant from './components/newCorrespondant';
 
- interface Correspondant {
+const C = {
+  primary: '#EF2D24',
+  white: '#FFFFFF',
+  grey: '#88898E',
+  lightBg: '#F5F5F7',
+  dark: '#1A1A1A',
+  border: '#E5E7EB',
+};
+
+interface Correspondant {
   id: number;
   idclient: number;
   idcorrespondant: number;
-
   correspondant: {
     id: number;
     nom: string;
@@ -36,739 +44,500 @@ import NewCorrespondant from './components/newCorrespondant';
 
 interface Visite {
   id: number;
-
   idclient: number;
   idutilisateur: number;
   idcategorie: number;
   idtype: number | null;
-
-  date: string; // "2026-04-17 00:00:00"
-
+  date: string;
   statut: number;
   type: number;
-
   object: string | null;
-
   created_at: string | null;
   updated_at: string | null;
-
   client: {
     id: number;
     nom: string;
-
     latitude: string;
     longitude: string;
-
     zone: string;
     quartier: string;
-
     idagence: number;
     idcategorie: number;
-
-    categorie_client: {
-      id: number;
-      intitule: string;
-    };
+    categorie_client: { id: number; intitule: string };
   };
-
-  categorie_visite: {
-    id: number;
-    intitule: string;
-  };
-
-  type_visite: {
-    id: number;
-    nom: string;
-  } | null;
+  categorie_visite: { id: number; intitule: string };
+  type_visite: { id: number; nom: string } | null;
 }
 
 export default function RapportB2BScreen() {
   const { idVisite } = useLocalSearchParams();
-  const [correpspondant, setCorrespondant] = useState<Correspondant[]>([]);
+  const router = useRouter();
+
+  const [correspondants, setCorrespondants] = useState<Correspondant[]>([]);
   const [modalCorrespondant, setModalCorrespondant] = useState(false);
   const [selectedCorrespondant, setSelectedCorrespondant] = useState<Correspondant | null>(null);
   const [visite, setVisite] = useState<Visite | null>(null);
   const [showCorrespondant, setShowCorrespondant] = useState(false);
-  console.log('ID VISITE:', idVisite);
 
-  const [description, setDescription] =
-    useState('');
-
-  const [actionAFaire, setActionAFaire] =
-    useState('');
-
-  const [photo, setPhoto] =
-    useState<string | null>(null);
-
-  const [dateRdv, setDateRdv] =
-    useState(new Date());
-
-  const [showPicker, setShowPicker] =
-    useState(false);
-
+  const [description, setDescription] = useState('');
+  const [actionAFaire, setActionAFaire] = useState('');
+  const [photo, setPhoto] = useState<string | null>(null);
+  const [dateRdv, setDateRdv] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const router = useRouter();
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetch(`https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`)
-      .then(res => res.json())
-      .then(json => setVisite(json))
-      .catch(err => setError(err.message))
+      .then((res) => res.json())
+      .then((json) => setVisite(json))
+      .catch((err) => Alert.alert('Erreur', err.message))
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
     if (visite) {
-      fetch(`https://allapps.alphaciment.com/crm_back/api/correspondantClientByIdClient/${visite.client.id}`)
-        .then(res => res.json())
-        .then(json => setCorrespondant(Array.isArray(json) ? json : []))
-        .catch(err => setError(err.message))
-        .finally(() => setLoading(false));
+      fetch(
+        `https://allapps.alphaciment.com/crm_back/api/correspondantClientByIdClient/${visite.client.id}`
+      )
+        .then((res) => res.json())
+        .then((json) => setCorrespondants(Array.isArray(json) ? json : []))
+        .catch(() => {});
     }
   }, [visite]);
 
-const pickImage = async () => {
-  Alert.alert(
-    'Photo',
-    'Choisissez une option',
-    [
-      {
-        text: 'Caméra',
-        onPress: openCamera,
-      },
-      {
-        text: 'Galerie',
-        onPress: openGallery,
-      },
-      {
-        text: 'Annuler',
-        style: 'cancel',
-      },
-    ]
-  );
-};
+  const pickImage = () => {
+    Alert.alert('Photo', 'Choisissez une source', [
+      { text: 'Caméra', onPress: openCamera },
+      { text: 'Galerie', onPress: openGallery },
+      { text: 'Annuler', style: 'cancel' },
+    ]);
+  };
 
   const openGallery = async () => {
     try {
-      const permission =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (!permission.granted) {
-        Alert.alert(
-          'Permission refusée',
-          'Autorisez l’accès à la galerie'
-        );
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Permission refusée', "Autorisez l'accès à la galerie");
         return;
       }
-
-      const result =
-        await ImagePicker.launchImageLibraryAsync({
-          mediaTypes:
-            ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          quality: 0.3,
-        });
-
-      if (!result.canceled) {
-        setPhoto(result.assets[0].uri);
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
-const openCamera = async () => {
-  try {
-    if (Platform.OS === 'web') {
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: true,
-        aspect: [4, 3],
         quality: 0.3,
       });
+      if (!result.canceled) setPhoto(result.assets[0].uri);
+    } catch {}
+  };
 
-      if (!result.canceled) {
-        setPhoto(result.assets[0].uri);
+  const openCamera = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 0.3,
+        });
+        if (!result.canceled) setPhoto(result.assets[0].uri);
+        return;
       }
+      const perm = await ImagePicker.requestCameraPermissionsAsync();
+      if (!perm.granted) {
+        Alert.alert('Permission refusée', "Autorisez l'accès à la caméra");
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.3 });
+      if (!result.canceled) setPhoto(result.assets[0].uri);
+    } catch {}
+  };
 
-      return;
-    }
-
-    const permission = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (!permission.granted) {
-      Alert.alert('Permission refusée', 'Autorisez l’accès à la caméra');
-      return;
-    }
-
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      quality: 0.3,
-    });
-
-    if (!result.canceled) {
-      setPhoto(result.assets[0].uri);
-    }
-  } catch (error) {
-    console.log(error);
-  }
-};
-
-  const onChangeDate = (
-    event: any,
-    selectedDate?: Date
-  ) => {
-    if (selectedDate) {
-      setDateRdv(selectedDate);
-    }
-
+  const onChangeDate = (_: any, selectedDate?: Date) => {
+    if (selectedDate) setDateRdv(selectedDate);
     setShowPicker(false);
   };
 
-const handleSubmit = async () => {
-  try {
+  const handleSubmit = async () => {
     if (!photo) {
       Alert.alert('Erreur', 'Veuillez ajouter une photo');
       return;
     }
+    setSubmitting(true);
+    try {
+      const formData = new FormData();
+      formData.append('idvisite', String(idVisite));
+      formData.append('description', description);
+      formData.append('action_a_faire', actionAFaire);
+      formData.append('prochaine_visite', dateRdv.toISOString().split('T')[0]);
+      formData.append(
+        'idcorrespondant',
+        selectedCorrespondant ? String(selectedCorrespondant.correspondant.id) : ''
+      );
 
-    const formData = new FormData();
-
-    formData.append('idvisite', String(idVisite));
-    formData.append('description', description);
-    formData.append('action_a_faire', actionAFaire);
-    formData.append(
-      'prochaine_visite',
-      dateRdv.toISOString().split('T')[0]
-    );
-
-    formData.append(
-      'idcorrespondant',
-      selectedCorrespondant
-        ? String(selectedCorrespondant.correspondant.id)
-        : ''
-    );
-
-    if (photo) {
       const filename = photo.split('/').pop() || 'photo.jpg';
       const match = /\.(\w+)$/.exec(filename);
-      const type = match ? `image/${match[1]}` : `image/jpeg`;
-
       formData.append('sary', {
         uri: photo,
         name: filename,
-        type,
+        type: match ? `image/${match[1]}` : 'image/jpeg',
       } as any);
-    }
 
-    // 1️⃣ ENREGISTREMENT RAPPORT
-    const response = await fetch(
-      'https://allapps.alphaciment.com/crm_back/api/rapportB2B',
-      {
-        method: 'POST',
-        body: formData,
-        headers: {
-          Accept: 'application/json',
-        },
-      }
-    );
-
-    const text = await response.text();
-
-    console.log('STATUS:', response.status);
-    console.log('RAW RESPONSE:', text);
-
-    let data: any;
-
-    try {
-      data = JSON.parse(text);
-    } catch {
-      data = { raw: text };
-    }
-
-    if (!response.ok) {
-      Alert.alert('Erreur API', JSON.stringify(data));
-      return;
-    }
-
-    Alert.alert('Succès', 'Rapport enregistré');
-
-    // 2️⃣ UPDATE STATUT VISITE
-    try {
-      const updateResponse = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`,
-        {
-          method: 'PUT', // ⚠️ change en PATCH si ton backend le demande
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify({
-            statut: 1, // ex: 1 = visite réalisée
-          }),
-        }
+      const response = await fetch(
+        'https://allapps.alphaciment.com/crm_back/api/rapportB2B',
+        { method: 'POST', body: formData, headers: { Accept: 'application/json' } }
       );
 
-      const updateText = await updateResponse.text();
+      const text = await response.text();
+      let data: any;
+      try { data = JSON.parse(text); } catch { data = { raw: text }; }
 
-      let updateData: any;
-
-      try {
-        updateData = JSON.parse(updateText);
-      } catch {
-        updateData = { raw: updateText };
+      if (!response.ok) {
+        Alert.alert('Erreur', JSON.stringify(data));
+        return;
       }
 
-      console.log('VISITE UPDATE:', updateData);
+      await fetch(`https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ statut: 1 }),
+      }).catch(() => {});
 
-      if (!updateResponse.ok) {
-        Alert.alert('Erreur update visite', JSON.stringify(updateData));
-      }
-    } catch (err) {
-      console.log('UPDATE VISITE ERROR:', err);
+      Alert.alert('Succès', 'Rapport enregistré avec succès');
+      setDescription('');
+      setActionAFaire('');
+      setPhoto(null);
+      setDateRdv(new Date());
+      setSelectedCorrespondant(null);
+      router.replace('/planning');
+    } catch (err: any) {
+      Alert.alert('Erreur', err.message ?? 'Erreur serveur');
+    } finally {
+      setSubmitting(false);
     }
+  };
 
-    // reset form
-    setDescription('');
-    setActionAFaire('');
-    setPhoto(null);
-    setDateRdv(new Date());
-    setSelectedCorrespondant(null);
-
-    // redirection
-    router.replace('/planning');
-
-  } catch (error) {
-    console.log('SUBMIT ERROR:', error);
-
-    const message =
-      error instanceof Error ? error.message : 'Erreur inconnue';
-
-    Alert.alert('Erreur', 'Erreur serveur: ' + message);
+  if (loading) {
+    return (
+      <View style={styles.safe}>
+        <PageHeader title="Rapport B2B" />
+        <View style={styles.loader}>
+          <ActivityIndicator size="large" color={C.primary} />
+        </View>
+      </View>
+    );
   }
-};
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={styles.safe}>
+      <PageHeader title="Rapport B2B" />
+
       <KeyboardAwareScrollView
-        enableOnAndroid={true}
+        enableOnAndroid
         extraScrollHeight={100}
         keyboardShouldPersistTaps="handled"
       >
-      <ScrollView
-        contentContainerStyle={styles.content}
-      >
-        <Text style={styles.title}>
-          Rapport B2B
-        </Text>
-        {/* INFOS CLIENT */}
-        {visite?.client && (
-          <View style={styles.clientCard}>
-            <Text style={styles.clientTitle}>
-              Informations du client
-            </Text>
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Nom :</Text>
-              <Text style={styles.infoValue}>
-                {visite.client.nom}
-              </Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Catégorie :</Text>
-              <Text style={styles.infoValue}>
-                {visite.client.categorie_client?.intitule || '-'}
-              </Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Zone :</Text>
-              <Text style={styles.infoValue}>
-                {visite.client.zone || '-'}
-              </Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Quartier :</Text>
-              <Text style={styles.infoValue}>
-                {visite.client.quartier || '-'}
-              </Text>
-            </View>
-
-            {/* <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Date visite :</Text>
-              <Text style={styles.infoValue}>
-                {visite.date?.split(' ')[0] || '-'}
-              </Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Nature :</Text>
-              <Text style={styles.infoValue}>
-                {visite.categorie_visite?.intitule || '-'}
-              </Text>
-            </View>
-
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Type visite :</Text>
-              <Text style={styles.infoValue}>
-                {visite.type_visite?.nom || '-'}
-              </Text>
-            </View>
-
-            {visite.object && (
-              <View style={styles.infoColumn}>
-                <Text style={styles.infoLabel}>Objectif :</Text>
-                <Text style={styles.infoValue}>
-                  {visite.object}
+          {/* Infos client */}
+          {visite?.client && (
+            <View style={styles.clientCard}>
+              <Text style={styles.clientName}>{visite.client.nom}</Text>
+              <View style={styles.clientRow}>
+                <Ionicons name="pricetag-outline" size={13} color={C.grey} style={styles.rowIcon} />
+                <Text style={styles.clientMeta}>
+                  {visite.client.categorie_client?.intitule || '—'}
                 </Text>
               </View>
-            )} */}
-          </View>
-        )}
-
-        {/* CORRESPONDANT */}
-        <View style={styles.block}>
-          <Text style={styles.label}>Correspondant</Text>
-
-          <View style={styles.row}>
-            <TouchableOpacity
-              style={[styles.input, { flex: 1 }]}
-              onPress={() => setModalCorrespondant(true)}
-            >
-              <Text>
-                {selectedCorrespondant
-                  ? `${selectedCorrespondant.correspondant.nom} (${selectedCorrespondant.correspondant.poste})`
-                  : 'Sélectionner un correspondant'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.addBtn}
-              onPress={() => setShowCorrespondant(true)}
-            >
-              <Text style={styles.addBtnText}>+</Text>
-            </TouchableOpacity>
-          </View>
-
-          <Modal transparent visible={modalCorrespondant} animationType="slide">
-            <Pressable
-              style={styles.overlay}
-              onPress={() => setModalCorrespondant(false)}
-            >
-              <View style={styles.modal}>
-                <ScrollView>
-                  {correpspondant.map((item) => (
-                    <TouchableOpacity
-                      key={item.id}
-                      style={styles.item}
-                      onPress={() => {
-                        setSelectedCorrespondant(item);
-                        setModalCorrespondant(false);
-                      }}
-                    >
-                      <Text style={{ fontWeight: 'bold' }}>
-                        {item.correspondant.nom}
-                      </Text>
-                      <Text>{item.correspondant.poste}</Text>
-                      <Text>{item.correspondant.contact}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
+              <View style={styles.clientRow}>
+                <Ionicons name="location-outline" size={13} color={C.grey} style={styles.rowIcon} />
+                <Text style={styles.clientMeta}>
+                  {visite.client.zone} — {visite.client.quartier}
+                </Text>
               </View>
-            </Pressable>
-          </Modal>
-        </View>
+            </View>
+          )}
 
-        {/* DESCRIPTION */}
-        <View style={styles.block}>
-          <Text style={styles.label}>
-            Description
-          </Text>
-          {/* <Text>Visite ID : {idVisite}</Text>
-          <Text>Client ID : {visite?.client?.id}</Text> */}
-          <TextInput
-            style={styles.textArea}
-            multiline
-            placeholder="Saisir description..."
-            value={description}
-            onChangeText={setDescription}
-          />
-        </View>
+          {/* Correspondant */}
+          <View style={styles.block}>
+            <View style={styles.labelRow}>
+              <Ionicons name="person-outline" size={14} color={C.grey} style={styles.labelIcon} />
+              <Text style={styles.label}>Correspondant</Text>
+            </View>
+            <View style={styles.rowFields}>
+              <TouchableOpacity
+                style={[styles.select, { flex: 1 }]}
+                onPress={() => setModalCorrespondant(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.selectText, !selectedCorrespondant && styles.placeholder]}>
+                  {selectedCorrespondant
+                    ? `${selectedCorrespondant.correspondant.nom} (${selectedCorrespondant.correspondant.poste})`
+                    : 'Sélectionner...'}
+                </Text>
+                <Ionicons name="chevron-down-outline" size={14} color={C.grey} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.addCorrespondantBtn}
+                onPress={() => setShowCorrespondant(true)}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="add-outline" size={22} color={C.white} />
+              </TouchableOpacity>
+            </View>
+          </View>
 
-        {/* ACTION */}
-        <View style={styles.block}>
-          <Text style={styles.label}>
-            Action à faire
-          </Text>
+          {/* Description */}
+          <View style={styles.block}>
+            <View style={styles.labelRow}>
+              <Ionicons name="document-text-outline" size={14} color={C.grey} style={styles.labelIcon} />
+              <Text style={styles.label}>Description</Text>
+            </View>
+            <TextInput
+              style={styles.textArea}
+              multiline
+              placeholder="Saisir une description..."
+              placeholderTextColor={C.grey}
+              value={description}
+              onChangeText={setDescription}
+              textAlignVertical="top"
+            />
+          </View>
 
-          <TextInput
-            style={styles.textArea}
-            multiline
-            placeholder="Saisir action..."
-            value={actionAFaire}
-            onChangeText={setActionAFaire}
-          />
-        </View>
+          {/* Action à faire */}
+          <View style={styles.block}>
+            <View style={styles.labelRow}>
+              <Ionicons name="checkmark-circle-outline" size={14} color={C.grey} style={styles.labelIcon} />
+              <Text style={styles.label}>Action à faire</Text>
+            </View>
+            <TextInput
+              style={styles.textArea}
+              multiline
+              placeholder="Saisir l'action à faire..."
+              placeholderTextColor={C.grey}
+              value={actionAFaire}
+              onChangeText={setActionAFaire}
+              textAlignVertical="top"
+            />
+          </View>
 
-        {/* PHOTO */}
-        <View style={styles.block}>
-          <Text style={styles.label}>
-            Importer photo
-          </Text>
+          {/* Photo */}
+          <View style={styles.block}>
+            <View style={styles.labelRow}>
+              <Ionicons name="camera-outline" size={14} color={C.grey} style={styles.labelIcon} />
+              <Text style={styles.label}>Photo</Text>
+            </View>
+            <TouchableOpacity style={styles.uploadBtn} onPress={pickImage} activeOpacity={0.85}>
+              <Ionicons name="camera-outline" size={18} color={C.white} style={{ marginRight: 8 }} />
+              <Text style={styles.uploadText}>Choisir une photo</Text>
+            </TouchableOpacity>
+            {photo && <Image source={{ uri: photo }} style={styles.photoPreview} />}
+          </View>
 
+          {/* Prochain RDV */}
+          <View style={styles.block}>
+            <View style={styles.labelRow}>
+              <Ionicons name="calendar-outline" size={14} color={C.grey} style={styles.labelIcon} />
+              <Text style={styles.label}>Prochain rendez-vous</Text>
+            </View>
+            {Platform.OS !== 'web' ? (
+              <>
+                <TouchableOpacity
+                  style={styles.select}
+                  onPress={() => setShowPicker(true)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.selectText}>
+                    {dateRdv.toLocaleDateString('fr-FR')}
+                  </Text>
+                </TouchableOpacity>
+                {showPicker && (
+                  <DateTimePicker
+                    value={dateRdv}
+                    mode="date"
+                    display="calendar"
+                    onChange={onChangeDate}
+                  />
+                )}
+              </>
+            ) : (
+              <input
+                type="date"
+                style={{
+                  padding: 12,
+                  borderRadius: 10,
+                  border: `1px solid ${C.border}`,
+                  width: '100%',
+                  fontSize: 14,
+                  backgroundColor: C.white,
+                }}
+                value={dateRdv.toISOString().split('T')[0]}
+                onChange={(e) => setDateRdv(new Date(e.target.value))}
+              />
+            )}
+          </View>
+
+          {/* Submit */}
           <TouchableOpacity
-            style={styles.uploadBtn}
-            onPress={pickImage}
+            style={[styles.submitBtn, submitting && { opacity: 0.7 }]}
+            onPress={handleSubmit}
+            disabled={submitting}
+            activeOpacity={0.85}
           >
-            <Text style={styles.uploadText}>
-              📷 Choisir une photo
-            </Text>
+            {submitting ? (
+              <ActivityIndicator color={C.white} size="small" />
+            ) : (
+              <>
+                <Ionicons name="checkmark-outline" size={18} color={C.white} style={{ marginRight: 6 }} />
+                <Text style={styles.submitText}>Enregistrer le rapport</Text>
+              </>
+            )}
           </TouchableOpacity>
 
-          {photo && (
-            <Image
-              source={{ uri: photo }}
-              style={styles.image}
-            />
-          )}
-        </View>
-
-        {/* DATE RDV */}
-        <View style={styles.block}>
-          <Text style={styles.label}>
-            Prochain rendez-vous
-          </Text>
-
-          {Platform.OS !== 'web' ? (
-            <>
-              <TouchableOpacity
-                style={styles.input}
-                onPress={() =>
-                  setShowPicker(true)
-                }
-              >
-                <Text>
-                  {dateRdv.toLocaleDateString(
-                    'fr-FR'
-                  )}
-                </Text>
-              </TouchableOpacity>
-
-              {showPicker && (
-                <DateTimePicker
-                  value={dateRdv}
-                  mode="date"
-                  display="calendar"
-                  onChange={onChangeDate}
-                />
-              )}
-            </>
-          ) : (
-            <input
-              type="date"
-              style={{
-                padding: 12,
-                borderRadius: 10,
-                border: '1px solid #ddd',
-                width: '100%',
-              }}
-              value={
-                dateRdv
-                  .toISOString()
-                  .split('T')[0]
-              }
-              onChange={(e) =>
-                setDateRdv(
-                  new Date(e.target.value)
-                )
-              }
-            />
-          )}
-        </View>
-
-        {/* BTN */}
-        <TouchableOpacity
-          style={styles.btn}
-          onPress={handleSubmit}
-        >
-          <Text style={styles.btnText}>
-            ✓ Enregistrer
-          </Text>
-        </TouchableOpacity>
-      </ScrollView>
+        </ScrollView>
       </KeyboardAwareScrollView>
+
+      {/* Modal correspondants */}
+      <Modal transparent visible={modalCorrespondant} animationType="slide">
+        <Pressable style={styles.overlay} onPress={() => setModalCorrespondant(false)}>
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Sélectionner un correspondant</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {correspondants.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.sheetItem}
+                  onPress={() => { setSelectedCorrespondant(item); setModalCorrespondant(false); }}
+                >
+                  <Text style={styles.sheetItemName}>{item.correspondant.nom}</Text>
+                  <Text style={styles.sheetItemMeta}>{item.correspondant.poste}</Text>
+                  <Text style={styles.sheetItemMeta}>{item.correspondant.contact}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
+
       <NewCorrespondant
         visible={showCorrespondant}
         idclient={visite?.idclient ?? null}
         onClose={() => setShowCorrespondant(false)}
         onSave={async () => {
           setShowCorrespondant(false);
-
-          const response = await fetch(
-            `https://allapps.alphaciment.com/crm_back/api/correspondantClientByIdClient/${visite?.client?.id}`
-          );
-
-          const json = await response.json();
-
-          setCorrespondant(Array.isArray(json) ? json : []);
+          if (visite?.client?.id) {
+            const res = await fetch(
+              `https://allapps.alphaciment.com/crm_back/api/correspondantClientByIdClient/${visite.client.id}`
+            );
+            const json = await res.json();
+            setCorrespondants(Array.isArray(json) ? json : []);
+          }
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+  safe: { flex: 1, backgroundColor: C.lightBg },
+  loader: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  scroll: { padding: 16, paddingBottom: 40 },
+
+  clientCard: {
+    backgroundColor: C.white,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 16,
+    borderLeftWidth: 4,
+    borderLeftColor: C.primary,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.07,
+    shadowRadius: 4,
   },
+  clientName: { fontSize: 16, fontWeight: '700', color: C.dark, marginBottom: 8 },
+  clientRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
+  rowIcon: { marginRight: 6, width: 18 },
+  clientMeta: { fontSize: 13, color: C.grey },
 
-  modal: {
-  backgroundColor: '#fff',
-  borderRadius: 12,
-  padding: 20,
-  maxHeight: '80%',
-},
+  block: { marginBottom: 16 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  labelIcon: { marginRight: 6 },
+  label: { fontSize: 13, fontWeight: '600', color: C.dark },
 
-overlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0,0,0,0.4)',
-  justifyContent: 'center',
-  padding: 20,
-},
+  rowFields: { flexDirection: 'row', gap: 10, alignItems: 'center' },
 
-item: {
-  padding: 12,
-  borderBottomWidth: 1,
-  borderBottomColor: '#eee',
-},
-
-  content: {
-    padding: 20,
-  },
-
-  title: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 20,
-  },
-
-  block: {
-    marginBottom: 20,
-  },
-
-  label: {
-    fontWeight: '600',
-    marginBottom: 8,
-  },
-
-  input: {
-    backgroundColor: '#fff',
-    padding: 14,
+  select: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.white,
     borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: C.border,
+    elevation: 1,
+  },
+  selectText: { flex: 1, fontSize: 14, color: C.dark },
+  placeholder: { color: C.grey },
+
+  addCorrespondantBtn: {
+    width: 48, height: 48, borderRadius: 12,
+    backgroundColor: C.primary,
+    justifyContent: 'center', alignItems: 'center',
   },
 
   textArea: {
-    backgroundColor: '#fff',
+    backgroundColor: C.white,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 15,
-    minHeight: 120,
+    borderColor: C.border,
+    padding: 14,
+    minHeight: 110,
     textAlignVertical: 'top',
+    fontSize: 14,
+    color: C.dark,
   },
 
   uploadBtn: {
-    backgroundColor: '#d71f27',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.grey,
     padding: 14,
     borderRadius: 12,
+  },
+  uploadText: { color: C.white, fontWeight: '700', fontSize: 14 },
+  photoPreview: { width: '100%', height: 220, borderRadius: 14, marginTop: 12 },
+
+  submitBtn: {
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.primary,
+    paddingVertical: 16,
+    borderRadius: 14,
+    marginTop: 8,
+    elevation: 4,
+    shadowColor: C.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
   },
+  submitText: { color: C.white, fontSize: 16, fontWeight: '700' },
 
-  uploadText: {
-    color: '#fff',
-    fontWeight: '700',
+  overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: C.white,
+    borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    padding: 20, maxHeight: '70%',
   },
-
-  image: {
-    width: '100%',
-    height: 220,
-    borderRadius: 16,
-    marginTop: 15,
+  sheetHandle: {
+    width: 40, height: 4, backgroundColor: C.border,
+    borderRadius: 2, alignSelf: 'center', marginBottom: 16,
   },
-
-  btn: {
-    backgroundColor: '#d71f27',
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 10,
-  },
-
-  btnText: {
-    color: '#fff',
-    textAlign: 'center',
-    fontWeight: '700',
-    fontSize: 16,
-  },
-  row: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 10,
-},
-
-addBtn: {
-  width: 50,
-  height: 50,
-  borderRadius: 12,
-  backgroundColor: '#d71f27',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-
-addBtnText: {
-  color: '#fff',
-  fontSize: 28,
-  fontWeight: 'bold',
-},
-clientCard: {
-  backgroundColor: '#fff',
-  padding: 16,
-  borderRadius: 12,
-  marginBottom: 20,
-  borderLeftWidth: 4,
-  borderLeftColor: '#d71f27',
-  elevation: 2,
-},
-
-clientTitle: {
-  fontSize: 18,
-  fontWeight: '700',
-  marginBottom: 12,
-  color: '#d71f27',
-},
-
-infoRow: {
-  flexDirection: 'row',
-  marginBottom: 8,
-},
-
-infoColumn: {
-  marginTop: 8,
-},
-
-infoLabel: {
-  width: 110,
-  fontWeight: '600',
-  color: '#555',
-},
-
-infoValue: {
-  flex: 1,
-  color: '#111',
-},
+  sheetTitle: { fontSize: 16, fontWeight: '700', color: C.dark, marginBottom: 12 },
+  sheetItem: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  sheetItemName: { fontSize: 15, fontWeight: '600', color: C.dark },
+  sheetItemMeta: { fontSize: 13, color: C.grey, marginTop: 2 },
 });
