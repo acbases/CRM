@@ -103,7 +103,7 @@ export default function Planning() {
     }
   };
 
-  useFocusEffect(useCallback(() => { loadVisites(); }, [user]));
+  useFocusEffect(useCallback(() => { loadVisites(); }, [user?.id]));
 
   const getStatusInfo = (v: Visite) => {
     if (v.statut === 1) return { color: C.green,  bg: C.greenBg,  label: 'VISITE FAITE' };

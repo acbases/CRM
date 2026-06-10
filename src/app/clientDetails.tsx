@@ -9,6 +9,10 @@ import {
   Alert,
   Platform,
   ScrollView,
+  Modal,
+  Pressable,
+  TextInput,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +21,7 @@ import NewCorrespondant from './components/newCorrespondant';
 import NewFournisseur from './components/newFournisseur';
 import EditCorrespondant from './components/editCorrespondant';
 import EditFournisseur from './components/editFournisseur';
+import { useAuth } from '@/context/AuthContext';
 
 const C = {
   primary: '#EF2D24',
@@ -58,6 +63,20 @@ export default function ClientDetails() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [editVisibleF, setEditVisibleF] = useState(false);
   const [selectedIdF, setSelectedIdF] = useState<number | null>(null);
+  const [selectedFournisseurClientId, setSelectedFournisseurClientId] = useState<number | null>(null);
+
+  // ── Nouvelle visite ──
+  const { user } = useAuth();
+  const [showVisiteModal, setShowVisiteModal] = useState(false);
+  const [visiteNature, setVisiteNature] = useState('');
+  const [visiteNatureId, setVisiteNatureId] = useState<number | null>(null);
+  const [visiteType, setVisiteType] = useState('');
+  const [visiteTypeId, setVisiteTypeId] = useState<number | null>(null);
+  const [visiteObjectif, setVisiteObjectif] = useState('');
+  const [categorieVisites, setCategorieVisites] = useState<any[]>([]);
+  const [typeVisites, setTypeVisites] = useState<any[]>([]);
+  const [modalNatureVisite, setModalNatureVisite] = useState(false);
+  const [modalTypeVisite, setModalTypeVisite] = useState(false);
 
   const fetchClient = async () => {
     try {
@@ -95,7 +114,49 @@ export default function ClientDetails() {
     fetchClient();
     fetchCorrespondants();
     fetchFournisseurs();
+    // Charger les listes pour la modal "Nouvelle Visite"
+    fetch('https://allapps.alphaciment.com/crm_back/api/categorieVisites')
+      .then(r => r.json()).then(j => setCategorieVisites(Array.isArray(j) ? j : [])).catch(() => {});
+    fetch('https://allapps.alphaciment.com/crm_back/api/typeVisites')
+      .then(r => r.json()).then(j => setTypeVisites(Array.isArray(j) ? j : [])).catch(() => {});
   }, [id]);
+
+  const handleSubmitVisite = async () => {
+    if (!visiteNatureId) {
+      Alert.alert('Erreur', 'Veuillez sélectionner une nature de visite');
+      return;
+    }
+    if (!user?.id) {
+      Alert.alert('Erreur', 'Utilisateur non connecté');
+      return;
+    }
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const body = {
+        idclient: client?.id,
+        idutilisateur: user.id,
+        idcategorie: visiteNatureId,
+        idtype: visiteTypeId ?? null,
+        date: `${today} 00:00:00`,
+        statut: 0,
+        type: 1,
+        object: visiteObjectif || null,
+      };
+      const res = await fetch('https://allapps.alphaciment.com/crm_back/api/visite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(await res.text());
+      Alert.alert('Succès', 'Visite créée avec succès');
+      setShowVisiteModal(false);
+      setVisiteNature(''); setVisiteNatureId(null);
+      setVisiteType(''); setVisiteTypeId(null);
+      setVisiteObjectif('');
+    } catch (err: any) {
+      Alert.alert('Erreur', err.message ?? 'Erreur lors de la création');
+    }
+  };
 
   const deleteCorrespondant = async (itemId: number) => {
     try {
@@ -222,6 +283,16 @@ export default function ClientDetails() {
           </View>
         </View>
 
+        {/* ── Bouton Nouvelle Visite ── */}
+        <TouchableOpacity
+          style={styles.newVisiteBtn}
+          onPress={() => setShowVisiteModal(true)}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="calendar-outline" size={18} color={C.white} style={{ marginRight: 8 }} />
+          <Text style={styles.newVisiteBtnText}>+ Nouvelle visite</Text>
+        </TouchableOpacity>
+
         {/* ── Correspondants ── */}
         <View style={styles.card}>
           <View style={styles.sectionHeader}>
@@ -303,7 +374,7 @@ export default function ClientDetails() {
                 <View style={styles.actionRow}>
                   <TouchableOpacity
                     style={styles.editBtn}
-                    onPress={() => { setSelectedIdF(item.fournisseur?.id); setEditVisibleF(true); }}
+                    onPress={() => { setSelectedIdF(item.fournisseur?.id); setSelectedFournisseurClientId(item.id); setEditVisibleF(true); }}
                     activeOpacity={0.8}
                   >
                     <Ionicons name="create-outline" size={14} color={C.dark} />
@@ -324,6 +395,97 @@ export default function ClientDetails() {
           )}
         </View>
       </ScrollView>
+
+      {/* ── Modal Nouvelle Visite ── */}
+      <Modal visible={showVisiteModal} transparent animationType="slide" onRequestClose={() => setShowVisiteModal(false)}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <Pressable style={styles.modalOverlay} onPress={() => setShowVisiteModal(false)}>
+            <Pressable style={styles.modalSheet} onPress={() => {}}>
+              <View style={styles.sheetHandle} />
+              <Text style={styles.sheetTitle}>Nouvelle visite — {client?.nom}</Text>
+
+              {/* Nature */}
+              <Text style={styles.sheetLabel}>
+                <Ionicons name="document-text-outline" size={13} color={C.grey} /> Nature de la visite *
+              </Text>
+              <TouchableOpacity style={styles.sheetSelect} onPress={() => setModalNatureVisite(true)}>
+                <Text style={[styles.sheetSelectText, !visiteNature && { color: C.grey }]}>
+                  {visiteNature || 'Sélectionner...'}
+                </Text>
+                <Ionicons name="chevron-down-outline" size={14} color={C.grey} />
+              </TouchableOpacity>
+
+              {/* Type */}
+              <Text style={styles.sheetLabel}>
+                <Ionicons name="pricetag-outline" size={13} color={C.grey} /> Type de visite
+              </Text>
+              <TouchableOpacity style={styles.sheetSelect} onPress={() => setModalTypeVisite(true)}>
+                <Text style={[styles.sheetSelectText, !visiteType && { color: C.grey }]}>
+                  {visiteType || 'Sélectionner...'}
+                </Text>
+                <Ionicons name="chevron-down-outline" size={14} color={C.grey} />
+              </TouchableOpacity>
+
+              {/* Objectif */}
+              <Text style={styles.sheetLabel}>
+                <Ionicons name="flag-outline" size={13} color={C.grey} /> Objectif
+              </Text>
+              <TextInput
+                style={styles.sheetTextArea}
+                placeholder="Décrire l'objectif..."
+                placeholderTextColor={C.grey}
+                multiline
+                numberOfLines={3}
+                value={visiteObjectif}
+                onChangeText={setVisiteObjectif}
+                textAlignVertical="top"
+              />
+
+              <TouchableOpacity style={styles.sheetSubmitBtn} onPress={handleSubmitVisite} activeOpacity={0.85}>
+                <Ionicons name="checkmark-outline" size={18} color={C.white} style={{ marginRight: 6 }} />
+                <Text style={styles.sheetSubmitText}>Créer la visite</Text>
+              </TouchableOpacity>
+            </Pressable>
+          </Pressable>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      {/* Nature picker */}
+      <Modal visible={modalNatureVisite} transparent animationType="slide">
+        <Pressable style={styles.modalOverlay} onPress={() => setModalNatureVisite(false)}>
+          <View style={styles.pickerSheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Nature de la visite</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {categorieVisites.map(item => (
+                <TouchableOpacity key={item.id} style={styles.pickerItem} onPress={() => { setVisiteNature(item.intitule); setVisiteNatureId(item.id); setModalNatureVisite(false); }}>
+                  <Text style={styles.pickerItemText}>{item.intitule}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
+
+      {/* Type picker */}
+      <Modal visible={modalTypeVisite} transparent animationType="slide">
+        <Pressable style={styles.modalOverlay} onPress={() => setModalTypeVisite(false)}>
+          <View style={styles.pickerSheet}>
+            <View style={styles.sheetHandle} />
+            <Text style={styles.sheetTitle}>Type de visite</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {typeVisites.map(item => (
+                <TouchableOpacity key={item.id} style={styles.pickerItem} onPress={() => { setVisiteType(item.nom); setVisiteTypeId(item.id); setModalTypeVisite(false); }}>
+                  <Text style={styles.pickerItemText}>{item.nom}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </Pressable>
+      </Modal>
 
       {/* ── Modals ── */}
       <NewCorrespondant
@@ -353,6 +515,8 @@ export default function ClientDetails() {
       <EditFournisseur
         visible={editVisibleF}
         idfournisseur={selectedIdF}
+        idfournisseurclient={selectedFournisseurClientId}
+        idclient={client?.id ?? null}
         onClose={() => setEditVisibleF(false)}
         onSave={fetchFournisseurs}
       />
@@ -384,6 +548,69 @@ const styles = StyleSheet.create({
   loader: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
   loaderText: { color: '#88898E', fontSize: 14 },
   scroll: { padding: 14, paddingBottom: 32 },
+
+  /* Bouton nouvelle visite */
+  newVisiteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EF2D24',
+    borderRadius: 14,
+    paddingVertical: 14,
+    marginBottom: 14,
+    elevation: 3,
+    shadowColor: '#EF2D24',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+  },
+  newVisiteBtnText: { color: '#FFFFFF', fontSize: 15, fontWeight: '700' },
+
+  /* Modal nouvelle visite */
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'flex-end',
+  },
+  modalSheet: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 32,
+  },
+  sheetHandle: {
+    width: 40, height: 4, backgroundColor: '#E5E7EB',
+    borderRadius: 2, alignSelf: 'center', marginBottom: 16,
+  },
+  sheetTitle: { fontSize: 16, fontWeight: '700', color: '#1A1A1A', marginBottom: 16 },
+  sheetLabel: { fontSize: 13, fontWeight: '600', color: '#1A1A1A', marginBottom: 8, marginTop: 12 },
+  sheetSelect: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#F9FAFB', borderRadius: 12,
+    paddingHorizontal: 14, paddingVertical: 13,
+    borderWidth: 1, borderColor: '#E5E7EB',
+  },
+  sheetSelectText: { flex: 1, fontSize: 14, color: '#1A1A1A' },
+  sheetTextArea: {
+    backgroundColor: '#F9FAFB', borderRadius: 12,
+    borderWidth: 1, borderColor: '#E5E7EB',
+    padding: 14, minHeight: 80, fontSize: 14, color: '#1A1A1A',
+  },
+  sheetSubmitBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    backgroundColor: '#EF2D24', borderRadius: 14, paddingVertical: 15,
+    marginTop: 20,
+  },
+  sheetSubmitText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
+
+  /* Picker modal */
+  pickerSheet: {
+    backgroundColor: '#FFFFFF', borderTopLeftRadius: 24, borderTopRightRadius: 24,
+    padding: 20, maxHeight: '60%',
+  },
+  pickerItem: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
+  pickerItemText: { fontSize: 15, color: '#1A1A1A' },
 
   card: {
     backgroundColor: '#FFFFFF',

@@ -8,86 +8,118 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+
+const C = {
+  primary: '#EF2D24',
+  white: '#FFFFFF',
+  grey: '#88898E',
+  dark: '#1A1A1A',
+  border: '#E5E7EB',
+  inputBg: '#F3F4F6',
+};
+
+interface FournisseurItem { id: number; nom: string; }
 
 type Props = {
   visible: boolean;
   idfournisseur: number | null;
+  idfournisseurclient?: number | null;
+  idclient?: number | null;
   onClose: () => void;
   onSave: () => void;
 };
 
 export default function EditFournisseur({
-  visible,
-  idfournisseur,
-  onClose,
-  onSave,
+  visible, idfournisseur, idfournisseurclient, idclient, onClose, onSave,
 }: Props) {
+  const [nom, setNom] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingFetch, setLoadingFetch] = useState(false);
-  const [nom, setNom] = useState('');
+  const [allFournisseurs, setAllFournisseurs] = useState<FournisseurItem[]>([]);
+  const [suggestions, setSuggestions] = useState<FournisseurItem[]>([]);
+  const [selectedExisting, setSelectedExisting] = useState<FournisseurItem | null>(null);
 
+  // Liste des fournisseurs pour auto-complete
+  useEffect(() => {
+    fetch('https://allapps.alphaciment.com/crm_back/api/fournisseurs')
+      .then(r => r.json())
+      .then(j => setAllFournisseurs(Array.isArray(j) ? j : []))
+      .catch(() => {});
+  }, []);
 
-  // ===================== LOAD DATA =====================
-useEffect(() => {
-  if (!idfournisseur || !visible) return;
+  // Charger le fournisseur courant
+  useEffect(() => {
+    if (!idfournisseur || !visible) return;
+    const load = async () => {
+      try {
+        setLoadingFetch(true);
+        const res = await fetch(`https://allapps.alphaciment.com/crm_back/api/fournisseur/${idfournisseur}`);
+        const json = await res.json();
+        setNom(json.nom ?? '');
+        setSelectedExisting(null);
+        setSuggestions([]);
+      } catch {
+        Alert.alert('Erreur', 'Impossible de charger le fournisseur');
+      } finally {
+        setLoadingFetch(false);
+      }
+    };
+    load();
+  }, [idfournisseur, visible]);
 
-  const fetchData = async () => {
-    try {
-      setLoadingFetch(true);
-
-      const res = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/fournisseur/${idfournisseur}`
-      );
-
-      const json = await res.json();
-
-      console.log('FOURNISSEUR LOADED:', json);
-
-      setNom(json.nom ?? '');
-
-    } catch (err) {
-      console.log('LOAD ERROR:', err);
-      Alert.alert('Erreur', 'Impossible de charger le fournisseur');
-    } finally {
-      setLoadingFetch(false);
-    }
+  const onChangeName = (text: string) => {
+    setNom(text);
+    setSelectedExisting(null);
+    setSuggestions(
+      text.trim().length >= 1
+        ? allFournisseurs
+            .filter(f => f.id !== idfournisseur && f.nom.toLowerCase().includes(text.toLowerCase()))
+            .slice(0, 6)
+        : []
+    );
   };
 
-  fetchData();
-}, [idfournisseur, visible]);
+  const selectSuggestion = (item: FournisseurItem) => {
+    setNom(item.nom);
+    setSelectedExisting(item);
+    setSuggestions([]);
+  };
 
-  // ===================== UPDATE =====================
   const handleUpdate = async () => {
+    if (!nom.trim()) return;
+    setLoading(true);
     try {
-      setLoading(true);
-
-      const res = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/fournisseur/${idfournisseur}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify({
-            nom,
-          }),
-        }
-      );
-
-      const text = await res.text();
-
-      if (!res.ok) {
-        throw new Error(text);
+      if (selectedExisting && idfournisseurclient && idclient) {
+        // Remplacer la liaison par un fournisseur existant
+        await fetch(
+          `https://allapps.alphaciment.com/crm_back/api/fournisseurClient/${idfournisseurclient}`,
+          { method: 'DELETE', headers: { Accept: 'application/json' } }
+        );
+        await fetch('https://allapps.alphaciment.com/crm_back/api/fournisseurClient', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ idclient, idfournisseur: selectedExisting.id }),
+        });
+      } else {
+        // Mettre à jour le nom du fournisseur actuel
+        const res = await fetch(
+          `https://allapps.alphaciment.com/crm_back/api/fournisseur/${idfournisseur}`,
+          {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+            body: JSON.stringify({ nom: nom.trim() }),
+          }
+        );
+        if (!res.ok) throw new Error(await res.text());
       }
-
       Alert.alert('Succès', 'Fournisseur modifié avec succès');
-
       onSave();
       onClose();
     } catch (err: any) {
-      console.log('UPDATE ERROR:', err);
       Alert.alert('Erreur', err.message || 'Erreur modification');
     } finally {
       setLoading(false);
@@ -95,88 +127,110 @@ useEffect(() => {
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <Text style={styles.title}>Modifier fournisseur</Text>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <View style={styles.overlay}>
+          <View style={styles.card}>
+            <Text style={styles.title}>Modifier le fournisseur</Text>
 
-          {loadingFetch  ? (
-            <ActivityIndicator size="large" color="#d71f27" />
-          ) : (
-            <>
-              <TextInput
-                style={styles.input}
-                placeholder="Nom"
-                value={nom}
-                onChangeText={setNom}
-              />
+            {loadingFetch ? (
+              <ActivityIndicator size="large" color={C.primary} style={{ marginVertical: 20 }} />
+            ) : (
+              <>
+                <Text style={styles.label}>Nom</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Rechercher ou modifier..."
+                  placeholderTextColor={C.grey}
+                  value={nom}
+                  onChangeText={onChangeName}
+                />
 
-              <TouchableOpacity
-                style={styles.saveBtn}
-                onPress={handleUpdate}
-              >
-                <Text style={styles.saveText}>✔ Sauvegarder</Text>
-              </TouchableOpacity>
+                {suggestions.length > 0 && (
+                  <View style={styles.suggestions}>
+                    {suggestions.map(item => (
+                      <TouchableOpacity key={item.id} style={styles.suggestionItem} onPress={() => selectSuggestion(item)}>
+                        <Ionicons name="search-outline" size={13} color={C.grey} style={{ marginRight: 8 }} />
+                        <Text style={styles.suggestionText}>{item.nom}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
 
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={onClose}
-              >
-                <Text style={styles.cancelText}>Annuler</Text>
-              </TouchableOpacity>
-            </>
-          )}
+                {selectedExisting && (
+                  <View style={styles.existingBadge}>
+                    <Ionicons name="swap-horizontal-outline" size={14} color="#1D4ED8" style={{ marginRight: 6 }} />
+                    <Text style={styles.existingBadgeText}>
+                      Remplacera le lien par ce fournisseur existant
+                    </Text>
+                  </View>
+                )}
+
+                <View style={styles.btnRow}>
+                  <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
+                    <Text style={styles.cancelText}>Annuler</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.saveBtn} onPress={handleUpdate} disabled={loading}>
+                    {loading
+                      ? <ActivityIndicator size="small" color={C.white} />
+                      : <>
+                          <Ionicons name="checkmark-outline" size={16} color={C.white} style={{ marginRight: 4 }} />
+                          <Text style={styles.saveText}>Sauvegarder</Text>
+                        </>
+                    }
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </View>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
+
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    padding: 20,
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center', padding: 20,
   },
-
-  container: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 20,
+  card: {
+    backgroundColor: C.white, borderRadius: 18, padding: 22,
+    elevation: 8, shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.15, shadowRadius: 8,
   },
-
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 15,
-  },
-
+  title: { fontSize: 17, fontWeight: '700', color: C.dark, marginBottom: 18 },
+  label: { fontSize: 13, fontWeight: '600', color: C.dark, marginBottom: 8 },
   input: {
-    backgroundColor: '#f3f4f6',
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 10,
+    backgroundColor: C.inputBg, borderWidth: 1, borderColor: C.border,
+    borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13,
+    fontSize: 14, color: C.dark,
   },
-
-  saveBtn: {
-    backgroundColor: '#d71f27',
-    padding: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginTop: 10,
+  suggestions: {
+    backgroundColor: C.white, borderWidth: 1, borderColor: C.border,
+    borderRadius: 12, marginTop: 4, overflow: 'hidden', elevation: 4,
   },
-
-  saveText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  suggestionItem: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: 11, paddingHorizontal: 14,
+    borderBottomWidth: 1, borderBottomColor: '#F3F4F6',
   },
-
+  suggestionText: { fontSize: 14, color: C.dark },
+  existingBadge: {
+    flexDirection: 'row', alignItems: 'center',
+    backgroundColor: '#DBEAFE', borderRadius: 8,
+    paddingHorizontal: 10, paddingVertical: 7, marginTop: 8,
+  },
+  existingBadgeText: { fontSize: 12, color: '#1D4ED8', fontWeight: '600', flex: 1 },
+  btnRow: { flexDirection: 'row', gap: 12, marginTop: 18 },
   cancelBtn: {
-    padding: 12,
-    alignItems: 'center',
+    flex: 1, backgroundColor: '#F3F4F6',
+    borderRadius: 12, paddingVertical: 13, alignItems: 'center',
   },
-
-  cancelText: {
-    color: '#333',
+  cancelText: { color: C.dark, fontWeight: '600' },
+  saveBtn: {
+    flex: 1, backgroundColor: C.primary, borderRadius: 12, paddingVertical: 13,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
   },
+  saveText: { color: C.white, fontWeight: '700' },
 });

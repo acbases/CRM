@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const C = {
   primary: '#EF2D24',
@@ -99,7 +100,13 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.container}
+        enableOnAndroid
+        extraScrollHeight={24}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         {/* Logo */}
         <Image
           source={require('../../assets/logo.png')}
@@ -196,7 +203,7 @@ export default function LoginScreen() {
             )}
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -207,9 +214,10 @@ const styles = StyleSheet.create({
     backgroundColor: C.lightBg,
   },
   container: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     paddingHorizontal: 24,
+    paddingVertical: 24,
   },
   logo: {
     width: 110,

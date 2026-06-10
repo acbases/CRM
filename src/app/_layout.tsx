@@ -11,12 +11,13 @@ function Layout() {
   const segments = useSegments();
 
   const { user, loading } = useAuth();
+  const currentSegment = segments[0]; // string primitive — stable comme dépendance
 
   // 🔐 protection routes
   useEffect(() => {
     if (loading) return;
 
-    const inLogin = segments[0] === 'login';
+    const inLogin = currentSegment === 'login';
 
     if (!user && !inLogin) {
       router.replace('/login');
@@ -25,7 +26,7 @@ function Layout() {
     if (user && inLogin) {
       router.replace('/(tabs)/accueil');
     }
-  }, [user, segments, loading]);
+  }, [user, currentSegment, loading]);
 
   // 🚀 updates
   useEffect(() => {

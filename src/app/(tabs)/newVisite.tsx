@@ -6,13 +6,13 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  ScrollView,
   Modal,
   Pressable,
   Platform,
   Alert,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
@@ -193,10 +193,12 @@ export default function NewVisiteScreen() {
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView
+      <KeyboardAwareScrollView
         contentContainerStyle={styles.scroll}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        enableOnAndroid
+        extraScrollHeight={100}
       >
         {/* Nature visite */}
         <View style={styles.field}>
@@ -376,7 +378,7 @@ export default function NewVisiteScreen() {
         >
           <Text style={styles.submitText}>✓  Enregistrer la visite</Text>
         </TouchableOpacity>
-      </ScrollView>
+      </KeyboardAwareScrollView>
 
       {/* Modals */}
       <Modal transparent visible={modalNature} animationType="slide">
