@@ -62,7 +62,7 @@ type FilterKey = 'all' | 'planned' | 'late' | 'done';
 
 const FILTER_DEFS: { key: FilterKey; label: string }[] = [
   { key: 'all',     label: 'Tous'       },
-  { key: 'planned', label: 'Planifiées' },
+  { key: 'planned', label: 'Ce jour' },
   { key: 'late',    label: 'En retard'  },
   { key: 'done',    label: 'Faites'     },
 ];

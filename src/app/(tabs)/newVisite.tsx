@@ -10,6 +10,7 @@ import {
   Pressable,
   Platform,
   Alert,
+  ScrollView,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';

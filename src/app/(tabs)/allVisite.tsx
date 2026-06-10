@@ -126,7 +126,7 @@ export default function AllVisite() {
   const getStatusInfo = (v: Visite) => {
     if (v.statut === 1) return { color: C.green,  bg: C.greenBg,  label: 'VISITE FAITE' };
     if (v.date < today)  return { color: C.red,    bg: C.redBg,    label: 'EN RETARD'    };
-    return                      { color: C.orange, bg: C.orangeBg, label: 'PLANIFIÉE'    };
+    return                      { color: C.orange, bg: C.orangeBg, label: 'CE JOUR'    };
   };
 
   // ── Filtrage client-side ──
