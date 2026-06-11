@@ -43,6 +43,7 @@ const MENU_ITEMS: MenuItem[] = [
   { name: 'Nouveau Client',  route: '/newClient',  icon: 'person-add-outline'  },
   { name: 'Nouvelle Visite', route: '/newVisite',  icon: 'calendar-outline'    },
   { name: 'Planning',        route: '/planning',   icon: 'list-outline'        },
+  { name: 'Modifier le mot de passe',        route: '/resetPassword',   icon: 'key-outline'        },
 ];
 
 const ADMIN_ITEMS: MenuItem[] = [
@@ -56,6 +57,7 @@ const PAGE_TITLES: Record<string, string> = {
   newVisite: 'Nouvelle Visite',
   planning:  'Planning',
   allVisite: 'Toutes les visites',
+  resetPassword: 'Réinitialiser le mot de passe',
 };
 
 export default function DrawerNavigator() {
@@ -282,7 +284,7 @@ const styles = StyleSheet.create({
   /* Header */
   headerSafe: { backgroundColor: C.primary },
   header: {
-    height: 56,
+    height: 85,
     backgroundColor: C.primary,
     flexDirection: 'row',
     alignItems: 'center',

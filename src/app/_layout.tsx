@@ -61,6 +61,7 @@ function Layout() {
         <Stack.Screen name="rapportRetail" />
         <Stack.Screen name="resultRetail" />
         <Stack.Screen name="scan" />
+        <Stack.Screen name="scan2" />
       </Stack>
     </ThemeProvider>
   );

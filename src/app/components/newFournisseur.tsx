@@ -10,6 +10,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BASE_URL } from '@/config/api';
 
 const C = {
   primary: '#EF2D24',
@@ -37,7 +38,7 @@ export default function NewFournisseur({ visible, onClose, onSave, idclient }: P
   const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
-    fetch('https://allapps.alphaciment.com/crm_back/api/fournisseurs')
+    fetch(`${BASE_URL}/fournisseurs`)
       .then(r => r.json())
       .then(j => setAllFournisseurs(Array.isArray(j) ? j : []))
       .catch(() => {});
@@ -74,7 +75,7 @@ export default function NewFournisseur({ visible, onClose, onSave, idclient }: P
       } else {
         // Nouveau → créer, puis utiliser l'ID créé
         const res = await fetch(
-          'https://allapps.alphaciment.com/crm_back/api/fournisseur',
+          `${BASE_URL}/fournisseur`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -88,7 +89,7 @@ export default function NewFournisseur({ visible, onClose, onSave, idclient }: P
       }
 
       // Lier au client
-      await fetch('https://allapps.alphaciment.com/crm_back/api/fournisseurClient', {
+      await fetch(`${BASE_URL}/fournisseurClient`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ idclient, idfournisseur }),

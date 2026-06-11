@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { BASE_URL } from '@/config/api';
 
 const C = {
   primary: '#EF2D24',
@@ -51,7 +52,7 @@ interface Visite {
     quartier: string;
     idagence: number;
     idcategorie: number;
-    categorie_client: { id: number; intitule: string };
+    categorie_client: { id: number; intitule: string; statut: string };
   };
   categorie_visite: { id: number; intitule: string };
   type_visite: { id: number; nom: string } | null;
@@ -80,7 +81,7 @@ export default function AllVisite() {
   const fetchUser = async (id: number) => {
     try {
       const res = await fetchWithTimeout(
-        `https://allapps.alphaciment.com/crm_back/api/user/${id}`
+        `${BASE_URL}/user/${id}`
       );
       return await res.json();
     } catch { return null; }
@@ -101,7 +102,7 @@ export default function AllVisite() {
   const loadVisites = async () => {
     setLoading(true);
     try {
-      const res = await fetchWithTimeout('https://allapps.alphaciment.com/crm_back/api/visite');
+      const res = await fetchWithTimeout(`${BASE_URL}/visite`);
       const json = await res.json();
       if (Array.isArray(json)) {
         const sorted = [...json].sort(
@@ -158,12 +159,12 @@ export default function AllVisite() {
   );
 
   const handlePress = (item: Visite) => {
-    const b2bCategories = [12, 13, 14, 15, 16, 18, 19];
-    const isB2B = b2bCategories.includes(item?.client?.idcategorie);
+    const isB2B = item?.client?.categorie_client?.statut === 'B2B';
+
     const route =
       item.statut === 0
-        ? isB2B ? '/rapportB2B' : '/scan'
-        : isB2B ? '/resultB2B' : '/resultRetail';
+        ? (isB2B ? '/rapportB2B' : '/scan')
+        : (isB2B ? '/resultB2B' : '/resultRetail');
     router.push({ pathname: route, params: { idVisite: item.id.toString() } });
   };
 

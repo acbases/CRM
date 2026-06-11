@@ -14,6 +14,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
+import { BASE_URL } from '@/config/api';
 
 const C = {
   primary: '#EF2D24',
@@ -48,7 +49,7 @@ export default function Clients() {
   const fetchClients = async () => {
     try {
       const res = await fetchWithTimeout(
-        'https://allapps.alphaciment.com/crm_back/api/clients'
+        `${BASE_URL}/clients`
       );
       const data = await res.json();
       const list = Array.isArray(data) ? data : [];

@@ -20,6 +20,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import PageHeader from '@/components/PageHeader';
 import NewCorrespondant from './components/newCorrespondant';
+import { BASE_URL } from '../config/api';
 
 const C = {
   primary: '#EF2D24',
@@ -82,13 +83,13 @@ export default function RapportB2BScreen() {
   const [description, setDescription] = useState('');
   const [actionAFaire, setActionAFaire] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
-  const [dateRdv, setDateRdv] = useState(new Date());
+  const [dateRdv, setDateRdv] = useState<Date | null>(null);
   const [showPicker, setShowPicker] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch(`https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`)
+    fetch(`${BASE_URL}/visite/${idVisite}`)
       .then((res) => res.json())
       .then((json) => setVisite(json))
       .catch((err) => Alert.alert('Erreur', err.message))
@@ -98,7 +99,7 @@ export default function RapportB2BScreen() {
   useEffect(() => {
     if (visite) {
       fetch(
-        `https://allapps.alphaciment.com/crm_back/api/correspondantClientByIdClient/${visite.client.id}`
+        `${BASE_URL}/correspondantClientByIdClient/${visite.client.id}`
       )
         .then((res) => res.json())
         .then((json) => setCorrespondants(Array.isArray(json) ? json : []))
@@ -167,7 +168,7 @@ export default function RapportB2BScreen() {
       formData.append('idvisite', String(idVisite));
       formData.append('description', description);
       formData.append('action_a_faire', actionAFaire);
-      formData.append('prochaine_visite', dateRdv.toISOString().split('T')[0]);
+      formData.append('prochaine_visite', dateRdv ? dateRdv.toISOString().split('T')[0] : '');
       formData.append(
         'idcorrespondant',
         selectedCorrespondant ? String(selectedCorrespondant.correspondant.id) : ''
@@ -182,7 +183,7 @@ export default function RapportB2BScreen() {
       } as any);
 
       const response = await fetch(
-        'https://allapps.alphaciment.com/crm_back/api/rapportB2B',
+        `${BASE_URL}/rapportB2B`,
         { method: 'POST', body: formData, headers: { Accept: 'application/json' } }
       );
 
@@ -195,7 +196,7 @@ export default function RapportB2BScreen() {
         return;
       }
 
-      await fetch(`https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`, {
+      await fetch(`${BASE_URL}/visite/${idVisite}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ statut: 1 }),
@@ -346,12 +347,12 @@ export default function RapportB2BScreen() {
                   activeOpacity={0.8}
                 >
                   <Text style={styles.selectText}>
-                    {dateRdv.toLocaleDateString('fr-FR')}
+                    {dateRdv ? dateRdv.toLocaleDateString('fr-FR') : 'Sélectionner une date'}
                   </Text>
                 </TouchableOpacity>
                 {showPicker && (
                   <DateTimePicker
-                    value={dateRdv}
+                    value={dateRdv  ?? new Date()}
                     mode="date"
                     display="calendar"
                     onChange={onChangeDate}
@@ -369,7 +370,7 @@ export default function RapportB2BScreen() {
                   fontSize: 14,
                   backgroundColor: C.white,
                 }}
-                value={dateRdv.toISOString().split('T')[0]}
+                value={dateRdv ? dateRdv.toISOString().split('T')[0] : ''}
                 onChange={(e) => setDateRdv(new Date(e.target.value))}
               />
             )}
@@ -420,13 +421,14 @@ export default function RapportB2BScreen() {
 
       <NewCorrespondant
         visible={showCorrespondant}
+        prospect={0}
         idclient={visite?.idclient ?? null}
         onClose={() => setShowCorrespondant(false)}
         onSave={async () => {
           setShowCorrespondant(false);
           if (visite?.client?.id) {
             const res = await fetch(
-              `https://allapps.alphaciment.com/crm_back/api/correspondantClientByIdClient/${visite.client.id}`
+              `${BASE_URL}/correspondantClientByIdClient/${visite.client.id}`
             );
             const json = await res.json();
             setCorrespondants(Array.isArray(json) ? json : []);

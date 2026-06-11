@@ -18,7 +18,7 @@ import { KeyboardAwareScrollView }
 from 'react-native-keyboard-aware-scroll-view';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
-
+import { BASE_URL } from '@/config/api';
 interface CategorieClient {
   id: number;
   intitule: string;
@@ -71,11 +71,43 @@ export default function NewClientScreen() {
   ]);
 
   const [idClientCreated, setIdClientCreated] = useState<number | null>(null);
+  const [dataZones, setDataZones] = useState<string[]>([]);
+  const [zoneSuggestions, setZoneSuggestions] = useState<string[]>([]);
+  const [showZoneSuggestions, setShowZoneSuggestions] = useState(false);
+
+  const handleZoneChange = (text: string) => {
+    setZone(text);
+
+    if (text.trim().length > 0) {
+      const filtered = dataZones.filter(z =>
+        z.toLowerCase().includes(text.toLowerCase())
+      );
+
+      setZoneSuggestions(filtered);
+      setShowZoneSuggestions(true);
+    } else {
+      setZoneSuggestions([]);
+      setShowZoneSuggestions(false);
+    }
+  };
+
+  const selectZone = (value: string) => {
+    setZone(value);        // 👉 juste le texte
+    setZoneSuggestions([]);
+    setShowZoneSuggestions(false);
+  };
+
 
   /* ===================== LOAD DATA ===================== */
+  useEffect(() => {
+    fetch(`${BASE_URL}/zone`)
+      .then(res => res.json())
+      .then(json => setDataZones(Array.isArray(json) ? json : []))
+      .catch(err => setError(err.message));
+  }, []);
 
   useEffect(() => {
-    fetch('https://allapps.alphaciment.com/crm_back/api/categorieClients')
+    fetch(`${BASE_URL}/categorieClients`)
       .then(res => res.json())
       .then(json => setDataCategorieClient(Array.isArray(json) ? json : []))
       .catch(err => setError(err.message))
@@ -83,7 +115,7 @@ export default function NewClientScreen() {
   }, []);
 
   useEffect(() => {
-    fetch('https://allapps.alphaciment.com/crm_back/api/agences')
+    fetch(`${BASE_URL}/agences`)
       .then(res => res.json())
       .then(json => setDataAgences(Array.isArray(json) ? json : []))
       .catch(err => setError(err.message))
@@ -91,7 +123,7 @@ export default function NewClientScreen() {
   }, []);
 
   useEffect(() => {
-    fetch('https://allapps.alphaciment.com/crm_back/api/fournisseurs')
+    fetch(`${BASE_URL}/fournisseurs`)
       .then(res => res.json())
       .then(json => setDataFournisseurs(Array.isArray(json) ? json : []))
       .catch(err => setError(err.message))
@@ -188,7 +220,7 @@ export default function NewClientScreen() {
         if (exist) return exist;
 
         const res = await fetch(
-          'https://allapps.alphaciment.com/crm_back/api/fournisseur',
+          `${BASE_URL}/fournisseur`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -221,7 +253,7 @@ export default function NewClientScreen() {
       };
 
       const clientRes = await fetch(
-        'https://allapps.alphaciment.com/crm_back/api/client',
+        `${BASE_URL}/client`,
         {
           method: 'POST',
           headers: {
@@ -258,7 +290,7 @@ export default function NewClientScreen() {
           // if not exist → create
           if (!exist) {
             const res = await fetch(
-              'https://allapps.alphaciment.com/crm_back/api/fournisseur',
+              `${BASE_URL}/fournisseur`,
               {
                 method: 'POST',
                 headers: {
@@ -286,7 +318,7 @@ export default function NewClientScreen() {
           .filter((f): f is { id: number; nom: string } => f != null)
           .map((f) => (
               fetch(
-              'https://allapps.alphaciment.com/crm_back/api/fournisseurClient',
+              `${BASE_URL}/fournisseurClient`,
               {
                   method: 'POST',
                   headers: {
@@ -484,16 +516,27 @@ export default function NewClientScreen() {
               </Text>
 
               <TextInput
-                style={[
-                  styles.input,
-                  styles.textArea,
-                ]}
+                style={[styles.input, styles.textArea]}
                 multiline
                 numberOfLines={4}
                 placeholder="Description de la zone..."
                 value={zone}
-                onChangeText={setZone}
+                onChangeText={handleZoneChange}
               />
+
+              {showZoneSuggestions && zoneSuggestions.length > 0 && (
+                <View style={styles.suggestionBox}>
+                  {zoneSuggestions.map((item, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.suggestionItem}
+                      onPress={() => selectZone(item)}
+                    >
+                      <Text>{item}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
 
             <View style={styles.field}>
@@ -708,6 +751,7 @@ export default function NewClientScreen() {
       </KeyboardAwareScrollView>
       <NewCorrespondant
         visible={showCorrespondant}
+        prospect={1}
         idclient={idClientCreated}
         onClose={() => setShowCorrespondant(false)}
         onSave={(data) => console.log(data)}

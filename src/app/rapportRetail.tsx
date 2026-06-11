@@ -12,6 +12,18 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter  } from 'expo-router';
+import { BASE_URL } from '@/config/api';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import PageHeader from '@/components/PageHeader';
+
+const C = {
+  primary: '#EF2D24',
+  white: '#FFFFFF',
+  grey: '#88898E',
+  lightBg: '#F5F5F7',
+  dark: '#1A1A1A',
+  border: '#E5E7EB',
+};
 
 export default function RapportRetail() {
     const router = useRouter();
@@ -23,7 +35,7 @@ export default function RapportRetail() {
   const [autresProduits, setAutresProduits] = useState<any[]>([]);
   const [selectedPlvs, setSelectedPlvs] = useState<number[]>([]);
   const [visite, setVisite] = useState<any>(null);
-const [errorMessage, setErrorMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const [description, setDescription] = useState('');
   const [autrePlv, setAutrePlv] = useState('');
@@ -41,7 +53,7 @@ const addLog = (title: string, data?: any) => {
 useEffect(() => {
   addLog('FETCH VISITE START', { idVisite });
 
-  fetch(`https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`)
+  fetch(`${BASE_URL}/visite/${idVisite}`)
     .then(async res => {
       addLog('VISITE STATUS', res.status);
 
@@ -63,7 +75,7 @@ useEffect(() => {
       addLog('FETCH PRODUITS START');
 
       const prodRes = await fetch(
-        'https://allapps.alphaciment.com/crm_back/api/produits'
+        `${BASE_URL}/produits`
       );
 
       addLog('PRODUITS STATUS', prodRes.status);
@@ -101,7 +113,7 @@ useEffect(() => {
 useEffect(() => {
   addLog('FETCH PLV START');
 
-  fetch(`https://allapps.alphaciment.com/crm_back/api/plvs`)
+  fetch(`${BASE_URL}/plvs`)
     .then(async res => {
       addLog('PLV STATUS', res.status);
 
@@ -187,7 +199,7 @@ const handleSubmit = async () => {
 
     // 1️⃣ INSERT RAPPORT
     const resRapport = await fetch(
-      'https://allapps.alphaciment.com/crm_back/api/rapport',
+      `${BASE_URL}/rapport`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -231,7 +243,7 @@ const handleSubmit = async () => {
       addLog(`PRODUIT CLIENT POST ${p.id}`, payload);
 
       const res = await fetch(
-        'https://allapps.alphaciment.com/crm_back/api/produitClient',
+        `${BASE_URL}/produitClient`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -298,7 +310,7 @@ const handleSubmit = async () => {
         addLog('REFPRIX POST ITEM', item);
 
         const resRefPrix = await fetch(
-          'https://allapps.alphaciment.com/crm_back/api/refPrixProduit',
+          `${BASE_URL}/refPrixProduit`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -339,7 +351,7 @@ const handleSubmit = async () => {
       addLog('AUTRE PRODUIT POST ITEM', autrePayload);
 
       const resAutre = await fetch(
-        'https://allapps.alphaciment.com/crm_back/api/autreProduit',
+        `${BASE_URL}/autreProduit`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -369,7 +381,7 @@ const handleSubmit = async () => {
       addLog('PLV POST ITEM', plvPayload);
 
       const resPlv = await fetch(
-        'https://allapps.alphaciment.com/crm_back/api/recensementPlv',
+        `${BASE_URL}/recensementPlv`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -395,7 +407,7 @@ const handleSubmit = async () => {
 
     // 6️⃣ UPDATE STATUT VISITE
     const resUpdate = await fetch(
-      `https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`,
+      `${BASE_URL}/visite/${idVisite}`,
       {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
@@ -441,7 +453,14 @@ const handleSubmit = async () => {
 
   // ===================== UI =====================
   return (
+    <View style={styles.safe}>
     <SafeAreaView style={styles.container}>
+      <PageHeader title="Rapport retail" />
+        <KeyboardAwareScrollView
+          enableOnAndroid
+          extraScrollHeight={100}
+          keyboardShouldPersistTaps="handled"
+        >
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -660,7 +679,9 @@ const handleSubmit = async () => {
         )} */}
       </ScrollView>
       </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
+    </View>
   );
 }
 
@@ -668,7 +689,7 @@ const handleSubmit = async () => {
 const styles = StyleSheet.create({
   container: { flex: 1, padding: 15, backgroundColor: '#f5f5f5', },
   title: { fontSize: 22, fontWeight: 'bold' },
-
+  safe: { flex: 1, backgroundColor: C.lightBg },
   section: { marginTop: 20, fontWeight: 'bold' },
 
 debugBox: {

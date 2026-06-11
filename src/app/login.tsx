@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../context/AuthContext';
 import { fetchWithTimeout } from '../utils/fetchWithTimeout';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { BASE_URL } from '@/config/api';
 
 const C = {
   primary: '#EF2D24',
@@ -66,7 +67,7 @@ export default function LoginScreen() {
       setLoading(true);
 
       const response = await fetchWithTimeout(
-        'https://allapps.alphaciment.com/crm_back/api/login',
+        `${BASE_URL}/login`,
         {
           method: 'POST',
           headers: {

@@ -17,6 +17,9 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
+import { BASE_URL } from '@/config/api';
+import { useRouter } from 'expo-router';
+
 
 const C = {
   primary: '#EF2D24',
@@ -88,37 +91,38 @@ export default function NewVisiteScreen() {
   const [agenceClientId, setAgenceClientId] = useState<number | null>(null);
   const [clientId, setClientId] = useState<number | null>(null);
   const { user } = useAuth();
+  const router = useRouter();
 
   useEffect(() => {
-    fetchWithTimeout('https://allapps.alphaciment.com/crm_back/api/clients')
+    fetchWithTimeout(`${BASE_URL}/clients`)
       .then((r) => r.json())
       .then((j) => setDataClient(Array.isArray(j) ? j : []))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
-    fetchWithTimeout('https://allapps.alphaciment.com/crm_back/api/categorieClients')
+    fetchWithTimeout(`${BASE_URL}/categorieClients`)
       .then((r) => r.json())
       .then((j) => setTypeClientList(Array.isArray(j) ? j : []))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
-    fetchWithTimeout('https://allapps.alphaciment.com/crm_back/api/categorieVisites')
+    fetchWithTimeout(`${BASE_URL}/categorieVisites`)
       .then((r) => r.json())
       .then((j) => setMotifVisiteList(Array.isArray(j) ? j : []))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
-    fetchWithTimeout('https://allapps.alphaciment.com/crm_back/api/typeVisites')
+    fetchWithTimeout(`${BASE_URL}/typeVisites`)
       .then((r) => r.json())
       .then((j) => setTypeVisiteList(Array.isArray(j) ? j : []))
       .catch(() => {});
   }, []);
 
   useEffect(() => {
-    fetchWithTimeout('https://allapps.alphaciment.com/crm_back/api/agences')
+    fetchWithTimeout(`${BASE_URL}/agences`)
       .then((r) => r.json())
       .then((j) => setAgenceClientList(Array.isArray(j) ? j : []))
       .catch(() => {});
@@ -159,7 +163,7 @@ export default function NewVisiteScreen() {
     }
     try {
       const body = {
-        idclient: clientId,
+        // idclient: clientId,
         idutilisateur: user.id,
         idcategorie: motifVisiteId,
         date: formatDate(date),
@@ -168,20 +172,24 @@ export default function NewVisiteScreen() {
         idtype: typeVisiteId,
         object: objectif,
       };
-      const response = await fetchWithTimeout(
-        'https://allapps.alphaciment.com/crm_back/api/visite',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify(body),
-        }
-      );
-      const text = await response.text();
-      let result;
-      try { result = JSON.parse(text); } catch { throw new Error('Réponse serveur invalide'); }
-      if (!response.ok) throw new Error(result.message || 'Erreur insertion visite');
-      resetForm();
-      Alert.alert('Succès', 'Visite enregistrée avec succès');
+
+
+      router.push({ pathname: '/scan2', params: { body: JSON.stringify(body)} });
+      // const response = await fetchWithTimeout(
+      //   `${BASE_URL}/visite`,
+      //   {
+      //     method: 'POST',
+      //     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      //     body: JSON.stringify(body),
+      //   }
+      // );
+      // const text = await response.text();
+      // let result;
+
+      // try { result = JSON.parse(text); } catch { throw new Error('Réponse serveur invalide'); }
+      // if (!response.ok) throw new Error(result.message || 'Erreur insertion visite');
+      // resetForm();
+      // Alert.alert('Succès', 'Visite enregistrée avec succès');
     } catch (err: any) {
       Alert.alert('Erreur', err.message);
     }
@@ -237,7 +245,7 @@ export default function NewVisiteScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Type client */}
+        {/* Type client 
         <View style={styles.field}>
           <View style={styles.labelRow}>
             <Ionicons name="people-outline" size={14} color={C.grey} style={styles.labelIcon} />
@@ -253,9 +261,9 @@ export default function NewVisiteScreen() {
             </Text>
             <Text style={styles.chevron}>▾</Text>
           </TouchableOpacity>
-        </View>
+        </View>*/}
 
-        {/* Agence */}
+        {/* Agence 
         <View style={styles.field}>
           <View style={styles.labelRow}>
             <Ionicons name="business-outline" size={14} color={C.grey} style={styles.labelIcon} />
@@ -271,9 +279,9 @@ export default function NewVisiteScreen() {
             </Text>
             <Text style={styles.chevron}>▾</Text>
           </TouchableOpacity>
-        </View>
+        </View>*/}
 
-        {/* Client autocomplete */}
+        {/* Client autocomplete 
         <View style={styles.field}>
           <View style={styles.labelRow}>
             <Ionicons name="search-outline" size={14} color={C.grey} style={styles.labelIcon} />
@@ -308,7 +316,7 @@ export default function NewVisiteScreen() {
               ))}
             </View>
           )}
-        </View>
+        </View>*/}
 
         {/* Date */}
         <View style={styles.field}>
@@ -343,7 +351,7 @@ export default function NewVisiteScreen() {
                 padding: 12,
                 borderRadius: 10,
                 border: `1px solid ${C.border}`,
-                width: '100%',
+                width: '93%',
                 fontSize: 14,
                 backgroundColor: C.white,
               }}
@@ -377,7 +385,7 @@ export default function NewVisiteScreen() {
           onPress={handleSubmit}
           activeOpacity={0.85}
         >
-          <Text style={styles.submitText}>✓  Enregistrer la visite</Text>
+          <Text style={styles.submitText}>✓  Valider</Text>
         </TouchableOpacity>
       </KeyboardAwareScrollView>
 

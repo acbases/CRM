@@ -12,15 +12,18 @@ import { CameraView, useCameraPermissions } from 'expo-camera';
 import * as Location from 'expo-location';
 import { useRouter,useLocalSearchParams } from 'expo-router';
 import { BASE_URL } from '../config/api';
+import { useAuth } from '@/context/AuthContext';
+import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
 
-export default function ScanScreen() {
+export default function Scan2Screen() {
   const router = useRouter();
-  const { idVisite } = useLocalSearchParams();
+  const { body } = useLocalSearchParams();
 
   const [permission, requestPermission] = useCameraPermissions();
 
   const [scanned, setScanned] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(true);
+  const { user } = useAuth();
 
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
@@ -116,13 +119,69 @@ export default function ScanScreen() {
       if (distance <= 50) {
         Alert.alert('OK', 'Client validé');
 
-        router.push({
-          pathname: '/rapportRetail',
-          params: {
-            idVisite,
-            idClient: qr.id,
-          },
-        });
+        if (!user?.id) {
+            Alert.alert('Erreur', 'Utilisateur non connecté');
+            return;
+        }
+
+        try {
+            const body = {
+            idclient: qr.id,
+            idutilisateur: user.id,
+            idcategorie: 5,
+            date: new Date().toISOString().split('T')[0],
+            statut: 0,
+            type: 1,
+            idtype: 2,
+            object: null,
+            };
+
+            const response = await fetchWithTimeout(
+            `${BASE_URL}/visite`,
+            {
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+                },
+                body: JSON.stringify(body),
+            }
+            );
+
+            console.log('Status:', response.status);
+
+            const text = await response.text();
+            console.log('Réponse brute:', text);
+
+            let result;
+            
+            console.log('TEXT VISITE :', text);
+
+            try {
+            result = JSON.parse(text);
+            console.log('RESULTAT VISITE :', result);
+            } catch {
+            throw new Error('Réponse serveur invalide');
+            }
+
+            if (!response.ok) {
+            throw new Error(result.message || 'Erreur insertion visite');
+            }
+
+            const idVisite = result.id; // à adapter selon la structure retournée
+
+            Alert.alert('Succès', 'Visite enregistrée avec succès');
+
+            router.push({
+            pathname: '/rapportRetail',
+            params: {
+                idClient: qr.id,
+                idVisite: idVisite,
+            },
+            });
+        } catch (err: any) {
+            Alert.alert('Erreur', err.message);
+        }
       } else {
         Alert.alert(
           'Hors zone',

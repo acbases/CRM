@@ -1,0 +1,1 @@
+export const BASE_URL = 'https://allapps.alphaciment.com/crm_back/api';

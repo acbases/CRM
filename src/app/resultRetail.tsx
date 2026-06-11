@@ -8,6 +8,18 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { BASE_URL } from '../config/api';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import PageHeader from '@/components/PageHeader';
+
+const C = {
+  primary: '#EF2D24',
+  white: '#FFFFFF',
+  grey: '#88898E',
+  lightBg: '#F5F5F7',
+  dark: '#1A1A1A',
+  border: '#E5E7EB',
+};
 
 export default function ResultRetail() {
   const { idVisite } = useLocalSearchParams();
@@ -27,24 +39,24 @@ export default function ResultRetail() {
     try {
 
     const responseVisite = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`
+        `${BASE_URL}/visite/${idVisite}`
     );
     const visiteJson = await responseVisite.json();
 
       const responseRapport = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/getRapportByIdVisite/${idVisite}` //rapport
+        `${BASE_URL}/getRapportByIdVisite/${idVisite}` //rapport
       );
 
       const responseProduits = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/getVueRapportProduitsByIdVisite/${idVisite}` //produits
+        `${BASE_URL}/getVueRapportProduitsByIdVisite/${idVisite}` //produits
       );
 
       const responsePlv = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/getVueRapportPlvByIdVisite/${idVisite}`  //plv
+        `${BASE_URL}/getVueRapportPlvByIdVisite/${idVisite}`  //plv
       );
 
       const responseAutres = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/getVueRapportAutresProduitsByIdVisite/${idVisite}`    //autres produits
+        `${BASE_URL}/getVueRapportAutresProduitsByIdVisite/${idVisite}`    //autres produits
       );
 
       const rapportJson = await responseRapport.json();
@@ -88,13 +100,17 @@ export default function ResultRetail() {
   }
 
   return (
+    <View style={styles.safe}>
     <SafeAreaView style={styles.container}>
+      <PageHeader title="Résultat rapport retail" />
+      <KeyboardAwareScrollView
+            enableOnAndroid
+            extraScrollHeight={100}
+            keyboardShouldPersistTaps="handled"
+          >
       <ScrollView
         contentContainerStyle={styles.content}
       >
-        <Text style={styles.title}>
-          Résultat Visite Retail
-        </Text>
         <View style={styles.clientCard}>
             <Text style={styles.clientName}>
                 {visiste?.client?.nom || 'Client inconnu'}
@@ -293,11 +309,15 @@ export default function ResultRetail() {
           </Text>
         </View>
       </ScrollView>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
+    
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: C.lightBg },
   container: {
     flex: 1,
     backgroundColor: '#f4f4f4',

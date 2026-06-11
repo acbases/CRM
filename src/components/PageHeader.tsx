@@ -50,7 +50,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#EF2D24',
   },
   header: {
-    height: 56,
+    height: 85,
     backgroundColor: '#EF2D24',
     flexDirection: 'row',
     alignItems: 'center',

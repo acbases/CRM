@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { BASE_URL } from '@/config/api';
 
 type Props = {
   visible: boolean;
@@ -38,7 +39,7 @@ useEffect(() => {
       setLoadingFetch(true);
 
       const res = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/correspondant/${idcorrespondant}`
+        `${BASE_URL}/correspondant/${idcorrespondant}`
       );
 
       const json = await res.json();
@@ -65,7 +66,7 @@ useEffect(() => {
       setLoading(true);
 
       const res = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/correspondant/${idcorrespondant}`,
+        `${BASE_URL}/correspondant/${idcorrespondant}`,
         {
           method: 'PUT',
           headers: {

@@ -12,6 +12,7 @@ import {
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { BASE_URL } from '@/config/api';
 
 const C = {
   primary: '#EF2D24',
@@ -45,7 +46,7 @@ export default function EditFournisseur({
 
   // Liste des fournisseurs pour auto-complete
   useEffect(() => {
-    fetch('https://allapps.alphaciment.com/crm_back/api/fournisseurs')
+    fetch(`${BASE_URL}/fournisseurs`)
       .then(r => r.json())
       .then(j => setAllFournisseurs(Array.isArray(j) ? j : []))
       .catch(() => {});
@@ -57,7 +58,7 @@ export default function EditFournisseur({
     const load = async () => {
       try {
         setLoadingFetch(true);
-        const res = await fetch(`https://allapps.alphaciment.com/crm_back/api/fournisseur/${idfournisseur}`);
+        const res = await fetch(`${BASE_URL}/fournisseur/${idfournisseur}`);
         const json = await res.json();
         setNom(json.nom ?? '');
         setSelectedExisting(null);
@@ -96,10 +97,10 @@ export default function EditFournisseur({
       if (selectedExisting && idfournisseurclient && idclient) {
         // Remplacer la liaison par un fournisseur existant
         await fetch(
-          `https://allapps.alphaciment.com/crm_back/api/fournisseurClient/${idfournisseurclient}`,
+          `${BASE_URL}/fournisseurClient/${idfournisseurclient}`,
           { method: 'DELETE', headers: { Accept: 'application/json' } }
         );
-        await fetch('https://allapps.alphaciment.com/crm_back/api/fournisseurClient', {
+        await fetch(`${BASE_URL}/fournisseurClient`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ idclient, idfournisseur: selectedExisting.id }),
@@ -107,7 +108,7 @@ export default function EditFournisseur({
       } else {
         // Mettre à jour le nom du fournisseur actuel
         const res = await fetch(
-          `https://allapps.alphaciment.com/crm_back/api/fournisseur/${idfournisseur}`,
+          `${BASE_URL}/fournisseur/${idfournisseur}`,
           {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json', Accept: 'application/json' },

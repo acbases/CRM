@@ -10,10 +10,16 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
+import { useRouter } from 'expo-router';
+import { useAuth } from '@/context/AuthContext';
+import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
+import { BASE_URL } from '@/config/api';
 
 interface NewCorrespondantProps {
   visible: boolean;
+  prospect: number | null;
   idclient: number | null;
   onClose: () => void;
   onSave?: (data: { id: number; nom: string; poste: string; contact: string }) => void;
@@ -21,6 +27,7 @@ interface NewCorrespondantProps {
 
 export default function NewCorrespondant({
   visible,
+  prospect,
   onClose,
   onSave,
   idclient,
@@ -29,6 +36,8 @@ export default function NewCorrespondant({
   const [poste, setPoste] = useState('');
   const [contact, setContact] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const router = useRouter();
+  const { user } = useAuth();
 
   const handleSave = async () => {
     if (!nom.trim() || !idclient) return;
@@ -42,7 +51,7 @@ export default function NewCorrespondant({
       };
 
       const res = await fetch(
-        'https://allapps.alphaciment.com/crm_back/api/correspondant',
+        `${BASE_URL}/correspondant`,
         {
           method: 'POST',
           headers: {
@@ -63,7 +72,7 @@ export default function NewCorrespondant({
 
       // 👉 liaison client - correspondant
       await fetch(
-        'https://allapps.alphaciment.com/crm_back/api/correspondantClient',
+        `${BASE_URL}/correspondantClient`,
         {
           method: 'POST',
           headers: {
@@ -85,6 +94,74 @@ export default function NewCorrespondant({
         resetForm();
         onClose();
       }, 1200);
+
+      if (prospect === 1) {
+        if (!user?.id) {
+          Alert.alert('Erreur', 'Utilisateur non connecté');
+          return;
+        }
+
+        try {
+          const body = {
+            idclient: idclient,
+            idutilisateur: user.id,
+            idcategorie: 5,
+            date: new Date().toISOString().split('T')[0],
+            statut: 0,
+            type: 1,
+            idtype: 2,
+            object: null,
+          };
+
+          const response = await fetchWithTimeout(
+            `${BASE_URL}/visite`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
+              },
+              body: JSON.stringify(body),
+            }
+          );
+
+          console.log('Status:', response.status);
+
+          const text = await response.text();
+          console.log('Réponse brute:', text);
+
+          let result;
+          
+          console.log('TEXT VISITE :', text);
+
+          try {
+            result = JSON.parse(text);
+            console.log('RESULTAT VISITE :', result);
+          } catch {
+            throw new Error('Réponse serveur invalide');
+          }
+
+          if (!response.ok) {
+            throw new Error(result.message || 'Erreur insertion visite');
+          }
+
+          const idVisite = result.id; // à adapter selon la structure retournée
+
+          resetForm();
+
+          Alert.alert('Succès', 'Visite enregistrée avec succès');
+
+          router.push({
+            pathname: '/rapportRetail',
+            params: {
+              idClient: idclient,
+              idVisite: idVisite,
+            },
+          });
+        } catch (err: any) {
+          Alert.alert('Erreur', err.message);
+        }
+      }
     } catch (error) {
       console.error('ERROR SAVE CORRESPONDANT:', error);
     }

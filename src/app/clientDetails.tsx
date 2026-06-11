@@ -22,6 +22,7 @@ import NewFournisseur from './components/newFournisseur';
 import EditCorrespondant from './components/editCorrespondant';
 import EditFournisseur from './components/editFournisseur';
 import { useAuth } from '@/context/AuthContext';
+import { BASE_URL } from '../config/api';
 
 const C = {
   primary: '#EF2D24',
@@ -46,7 +47,7 @@ type Client = {
   idcategorie: number;
   status_qrcode: boolean;
   agence?: { id: number; intitule: string };
-  categorie_client?: { id: number; intitule: string };
+  categorie_client?: { id: number; intitule: string; statut: string };
 };
 
 export default function ClientDetails() {
@@ -80,7 +81,7 @@ export default function ClientDetails() {
 
   const fetchClient = async () => {
     try {
-      const res = await fetch(`https://allapps.alphaciment.com/crm_back/api/client/${id}`);
+      const res = await fetch(`${BASE_URL}/client/${id}`);
       const data = await res.json();
       setClient(data);
     } catch {
@@ -93,7 +94,7 @@ export default function ClientDetails() {
   const fetchCorrespondants = async () => {
     try {
       const res = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/correspondantClientByIdClient/${id}`
+        `${BASE_URL}/correspondantClientByIdClient/${id}`
       );
       const data = await res.json();
       setCorrespondants(Array.isArray(data) ? data : []);
@@ -103,7 +104,7 @@ export default function ClientDetails() {
   const fetchFournisseurs = async () => {
     try {
       const res = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/fournisseurClientByIdClient/${id}`
+        `${BASE_URL}/fournisseurClientByIdClient/${id}`
       );
       const data = await res.json();
       setFournisseurs(Array.isArray(data) ? data : []);
@@ -115,9 +116,9 @@ export default function ClientDetails() {
     fetchCorrespondants();
     fetchFournisseurs();
     // Charger les listes pour la modal "Nouvelle Visite"
-    fetch('https://allapps.alphaciment.com/crm_back/api/categorieVisites')
+    fetch(`${BASE_URL}/categorieVisites`)
       .then(r => r.json()).then(j => setCategorieVisites(Array.isArray(j) ? j : [])).catch(() => {});
-    fetch('https://allapps.alphaciment.com/crm_back/api/typeVisites')
+    fetch(`${BASE_URL}/typeVisites`)
       .then(r => r.json()).then(j => setTypeVisites(Array.isArray(j) ? j : [])).catch(() => {});
   }, [id]);
 
@@ -142,7 +143,7 @@ export default function ClientDetails() {
         type: 1,
         object: visiteObjectif || null,
       };
-      const res = await fetch('https://allapps.alphaciment.com/crm_back/api/visite', {
+      const res = await fetch(`${BASE_URL}/visite`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(body),
@@ -161,7 +162,7 @@ export default function ClientDetails() {
   const deleteCorrespondant = async (itemId: number) => {
     try {
       const response = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/correspondantClient/${itemId}`,
+        `${BASE_URL}/correspondantClient/${itemId}`,
         { method: 'DELETE', headers: { Accept: 'application/json' } }
       );
       if (!response.ok) {
@@ -189,7 +190,7 @@ export default function ClientDetails() {
   const deleteFournisseur = async (itemId: number) => {
     try {
       const response = await fetch(
-        `https://allapps.alphaciment.com/crm_back/api/fournisseurClient/${itemId}`,
+        `${BASE_URL}/fournisseurClient/${itemId}`,
         { method: 'DELETE', headers: { Accept: 'application/json' } }
       );
       if (!response.ok) {
@@ -213,6 +214,14 @@ export default function ClientDetails() {
       ]);
     }
   };
+
+  const isDisabledNewVisite =
+    !!client &&
+    String(client.status_qrcode) === 'false' &&
+    client?.categorie_client?.statut === 'RETAIL';
+
+  console.log('status_qrcode:', client?.status_qrcode);
+  console.log('disabled:', isDisabledNewVisite);
 
   if (loading) {
     return (
@@ -285,12 +294,27 @@ export default function ClientDetails() {
 
         {/* ── Bouton Nouvelle Visite ── */}
         <TouchableOpacity
-          style={styles.newVisiteBtn}
-          onPress={() => setShowVisiteModal(true)}
-          activeOpacity={0.85}
+          style={[
+            styles.newVisiteBtn,
+            isDisabledNewVisite && { backgroundColor: '#D1D5DB', opacity: 0.6 }
+          ]}
+          onPress={() => {
+            if (isDisabledNewVisite) return;
+            setShowVisiteModal(true);
+          }}
+          activeOpacity={isDisabledNewVisite ? 1 : 0.85}
+          disabled={isDisabledNewVisite}   // 👈 IMPORTANT
+          
         >
-          <Ionicons name="calendar-outline" size={18} color={C.white} style={{ marginRight: 8 }} />
-          <Text style={styles.newVisiteBtnText}>+ Nouvelle visite</Text>
+          <Ionicons
+            name="calendar-outline"
+            size={18}
+            color="#FFFFFF"
+            style={{ marginRight: 8 }}
+          />
+          <Text style={styles.newVisiteBtnText}>
+            + Nouvelle visite
+          </Text>
         </TouchableOpacity>
 
         {/* ── Correspondants ── */}
@@ -490,6 +514,7 @@ export default function ClientDetails() {
       {/* ── Modals ── */}
       <NewCorrespondant
         visible={showCorrespondant}
+        prospect={0}
         idclient={client?.id ?? null}
         onClose={() => setShowCorrespondant(false)}
         onSave={async () => {

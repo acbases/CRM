@@ -1,6 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { BASE_URL } from '../config/api';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import PageHeader from '@/components/PageHeader';
+
+const C = {
+  primary: '#EF2D24',
+  white: '#FFFFFF',
+  grey: '#88898E',
+  lightBg: '#F5F5F7',
+  dark: '#1A1A1A',
+  border: '#E5E7EB',
+};
 
 interface Rapport {
   id: number;
@@ -122,7 +134,7 @@ export default function ResultB2B() {
 useEffect(() => {
   setLoading(true);
 
-  fetch(`https://allapps.alphaciment.com/crm_back/api/visite/${idVisite}`)
+  fetch(`${BASE_URL}/visite/${idVisite}`)
     .then(res => res.json())
     .then(json => setVisite(json))
     .catch(err => console.log(err))
@@ -136,7 +148,7 @@ useEffect(() => {
 
   setLoading(true);
 
-  fetch(`https://allapps.alphaciment.com/crm_back/api/client/${visite.idclient}`)
+  fetch(`${BASE_URL}/client/${visite.idclient}`)
     .then(res => res.json())
     .then(json => setClients(json))
     .catch(err => console.log(err))
@@ -149,7 +161,7 @@ useEffect(() => {
 useEffect(() => {
   setLoading(true);
 
-  fetch(`https://allapps.alphaciment.com/crm_back/api/getRapportB2BByIdVisite/${idVisite}`)
+  fetch(`${BASE_URL}/getRapportB2BByIdVisite/${idVisite}`)
     .then(res => res.json())
     .then(json => setRapport(Array.isArray(json) ? json[0] : json))
     .catch(err => console.log(err))
@@ -175,53 +187,63 @@ useEffect(() => {
   }
 
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.safe}>
+      <PageHeader title="Résultat rapport B2B" />
       
-      {/* VISITE INFO */}
-      <View style={styles.card}>
-        <Text style={styles.title}>Informations visite</Text>
+      <KeyboardAwareScrollView
+        enableOnAndroid
+        extraScrollHeight={100}
+        keyboardShouldPersistTaps="handled"
+      >
+        <ScrollView style={styles.container}>
+          
+          {/* VISITE INFO */}
+          <View style={styles.card}>
+            <Text style={styles.title}>Informations visite</Text>
 
-        <Text>Client : {clients?.nom || 'Inconnu'}</Text>
-        <Text>Zone : {clients?.zone || 'Inconnue'}</Text>
-        <Text>Quartier : {clients?.quartier || 'Inconnu'}</Text>
-        <Text>Agence : {clients?.agence.intitule || 'Inconnue'}</Text>
-        <Text>Catégorie : {clients?.categorie_client.intitule}</Text>
-        <Text>Date visite : {visite?.date}</Text>
-      </View>
+            <Text>Client : {clients?.nom || 'Inconnu'}</Text>
+            <Text>Zone : {clients?.zone || 'Inconnue'}</Text>
+            <Text>Quartier : {clients?.quartier || 'Inconnu'}</Text>
+            <Text>Agence : {clients?.agence.intitule || 'Inconnue'}</Text>
+            <Text>Catégorie : {clients?.categorie_client.intitule}</Text>
+            <Text>Date visite : {visite?.date}</Text>
+          </View>
 
-      {/* DESCRIPTION */}
-      <View style={styles.card}>
-        <Text style={styles.title}>Description</Text>
-        <Text>{rapport?.description}</Text>
-      </View>
+          {/* DESCRIPTION */}
+          <View style={styles.card}>
+            <Text style={styles.title}>Description</Text>
+            <Text>{rapport?.description}</Text>
+          </View>
 
-      {/* ACTION */}
-      <View style={styles.card}>
-        <Text style={styles.title}>Action à faire</Text>
-        <Text>{rapport?.action_a_faire}</Text>
-      </View>
+          {/* ACTION */}
+          <View style={styles.card}>
+            <Text style={styles.title}>Action à faire</Text>
+            <Text>{rapport?.action_a_faire}</Text>
+          </View>
 
-      {/* PHOTO */}
-      <View style={styles.card}>
-        <Text style={styles.title}>Photo</Text>
+          {/* PHOTO */}
+          <View style={styles.card}>
+            <Text style={styles.title}>Photo</Text>
 
-        {rapport?.sary ? (
-          <Image
-            source={{ uri: rapport.sary }}
-            style={styles.image}
-          />
-        ) : (
-          <Text>Aucune photo</Text>
-        )}
-      </View>
+            {rapport?.sary ? (
+              <Image
+                source={{ uri: rapport.sary }}
+                style={styles.image}
+              />
+            ) : (
+              <Text>Aucune photo</Text>
+            )}
+          </View>
 
-      {/* RDV */}
-      <View style={styles.card}>
-        <Text style={styles.title}>Prochain rendez-vous</Text>
-        <Text>{rapport?.prochaine_visite}</Text>
-      </View>
+          {/* RDV */}
+          <View style={styles.card}>
+            <Text style={styles.title}>Prochain rendez-vous</Text>
+            <Text>{rapport?.prochaine_visite}</Text>
+          </View>
 
-    </ScrollView>
+        </ScrollView>
+      </KeyboardAwareScrollView>
+    </View>
   );
 }
 
@@ -250,6 +272,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 10,
   },
+  safe: { flex: 1, backgroundColor: C.lightBg },
 
   image: {
     width: '100%',
