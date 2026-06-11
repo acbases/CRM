@@ -18,6 +18,17 @@ import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
 export default function Scan2Screen() {
   const router = useRouter();
   const { body } = useLocalSearchParams();
+  const visite = body
+  ? JSON.parse(body as string) as {
+      idutilisateur: number;
+      idcategorie: number;
+      date: string;
+      statut: number;
+      type: number;
+      idtype: number;
+      object: string;
+    }
+  : null;
 
   const [permission, requestPermission] = useCameraPermissions();
 
@@ -126,14 +137,14 @@ export default function Scan2Screen() {
 
         try {
             const body = {
-            idclient: qr.id,
-            idutilisateur: user.id,
-            idcategorie: 5,
-            date: new Date().toISOString().split('T')[0],
-            statut: 0,
-            type: 1,
-            idtype: 2,
-            object: null,
+                idclient: qr.id,
+                idutilisateur: user.id,
+                idcategorie: visite?.idcategorie ?? 5,
+                date: visite?.date ?? new Date().toISOString().split('T')[0],
+                statut: visite?.idcategorie ?? 0,
+                type: visite?.idcategorie ?? 1,
+                idtype: visite?.idtype ?? 2,
+                object: visite?.object ?? null,
             };
 
             const response = await fetchWithTimeout(
