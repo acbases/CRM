@@ -173,6 +173,9 @@ export default function ClientDetails() {
       setVisiteNature(''); setVisiteNatureId(null);
       setVisiteType(''); setVisiteTypeId(null);
       setVisiteObjectif('');
+      fetchClient();
+      fetchCorrespondants();
+      fetchFournisseurs();
 
       const route: '/scan' | '/rapportB2B' =
         client?.statut !== 0 &&
