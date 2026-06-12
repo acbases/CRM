@@ -4,7 +4,7 @@
     "slug": "CRM",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/icone.png",
     "scheme": "crm",
     "userInterfaceStyle": "automatic",
     "ios": {

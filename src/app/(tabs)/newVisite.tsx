@@ -153,10 +153,10 @@ export default function NewVisiteScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!clientId || clientId < 1) {
-      Alert.alert('Erreur', 'Veuillez sélectionner un client valide');
-      return;
-    }
+    // if (!clientId || clientId < 1) {
+    //   Alert.alert('Erreur', 'Veuillez sélectionner un client valide');
+    //   return;
+    // }
     if (!user?.id) {
       Alert.alert('Erreur', 'Utilisateur non connecté');
       return;

@@ -179,43 +179,43 @@ export default function ResultRetail() {
               style={styles.card}
             >
               <Text style={styles.productTitle}>
-                {item?.intitule}
+                {item?.intitule || '-'}
               </Text>
 
               <Text>
                 Prix achat :
                 {' '}
-                {item?.prix_achat} Ar
+                {item?.prix_achat || '-'} Ar
               </Text>
 
               <Text>
                 Prix vente gros :
                 {' '}
-                {item?.prix_vente_gros} Ar
+                {item?.prix_vente_gros || '-'} Ar
               </Text>
 
               <Text>
                 Prix vente détail :
                 {' '}
-                {item?.prix_vente_details} Ar
+                {item?.prix_vente_details || '-'} Ar
               </Text>
 
               <Text>
                 Coût transport :
                 {' '}
-                {item?.cout_transport} Ar
+                {item?.cout_transport || '-'} Ar
               </Text>
 
               <Text>
                 Marge :
                 {' '}
-                {item?.marge}
+                {item?.marge || '-'}
               </Text>
 
               <Text>
                 Volume :
                 {' '}
-                {item?.volume} T
+                {item?.volume || '-'} T
               </Text>
             </View>
           )

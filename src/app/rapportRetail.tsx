@@ -454,7 +454,7 @@ const handleSubmit = async () => {
   // ===================== UI =====================
   return (
     <View style={styles.safe}>
-    <SafeAreaView style={styles.container}>
+    {/* <SafeAreaView style={styles.container}> */}
       <PageHeader title="Rapport retail" />
         <KeyboardAwareScrollView
           enableOnAndroid
@@ -473,7 +473,7 @@ const handleSubmit = async () => {
         }}
       >
 
-        <Text style={styles.title}>Rapport Retail</Text>
+        {/* <Text style={styles.title}>Rapport Retail</Text> */}
         {/* <Text>Id visite: {idVisite}</Text> */}
         <View style={styles.clientCard}>
         <Text style={styles.clientTitle}>👤 Informations client</Text>
@@ -680,7 +680,7 @@ const handleSubmit = async () => {
       </ScrollView>
       </KeyboardAvoidingView>
       </KeyboardAwareScrollView>
-    </SafeAreaView>
+    {/* </SafeAreaView> */}
     </View>
   );
 }
