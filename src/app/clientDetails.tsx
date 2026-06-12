@@ -46,6 +46,7 @@ type Client = {
   idagence: number;
   idcategorie: number;
   status_qrcode: boolean;
+  statut: number;
   agence?: { id: number; intitule: string };
   categorie_client?: { id: number; intitule: string; statut: string };
 };
@@ -148,16 +149,48 @@ export default function ClientDetails() {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(body),
       });
-      if (!res.ok) throw new Error(await res.text());
+      const text = await res.text();
+      let result;
+            
+      console.log('TEXT VISITE :', text);
+
+      try {
+      result = JSON.parse(text);
+      console.log('RESULTAT VISITE :', result);
+      } catch {
+      throw new Error('Réponse serveur invalide');
+      }
+
+      if (!res.ok) {
+      throw new Error(result.message || 'Erreur insertion visite');
+      }
+
+      const idVisite = result.id; // à adapter selon la structure retournée
+
+      
       Alert.alert('Succès', 'Visite créée avec succès');
       setShowVisiteModal(false);
       setVisiteNature(''); setVisiteNatureId(null);
       setVisiteType(''); setVisiteTypeId(null);
       setVisiteObjectif('');
-    } catch (err: any) {
-      Alert.alert('Erreur', err.message ?? 'Erreur lors de la création');
-    }
-  };
+
+      const route: '/scan' | '/rapportB2B' =
+        client?.statut !== 0 &&
+        client?.categorie_client?.statut === 'B2B'
+          ? '/rapportB2B'
+          : '/scan';
+
+      router.push({
+        pathname: route,
+        params: {
+          idVisite: idVisite,
+          idClient: client?.id,
+        },
+      });
+      } catch (err: any) {
+        Alert.alert('Erreur', err.message ?? 'Erreur lors de la création');
+      }
+    };
 
   const deleteCorrespondant = async (itemId: number) => {
     try {
