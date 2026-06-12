@@ -280,7 +280,7 @@ export default function AllVisite() {
           data={paginatedData}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
-          contentContainerStyle={styles.list}
+          contentContainerStyle={[styles.list, { paddingBottom: 90 }]}
           showsVerticalScrollIndicator={false}
           ListFooterComponent={
             totalPages > 1 ? (
