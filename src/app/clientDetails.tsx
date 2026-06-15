@@ -34,6 +34,8 @@ const C = {
   green: '#16A34A',
   greenBg: '#DCFCE7',
   redBg: '#FEE2E2',
+  blue:'#126bc4',
+  blue2:'#509597',
 };
 
 type Client = {
@@ -660,7 +662,7 @@ const styles = StyleSheet.create({
   },
   sheetSubmitBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: '#EF2D24', borderRadius: 14, paddingVertical: 15,
+    backgroundColor: C.blue, borderRadius: 14, paddingVertical: 15,
     marginTop: 20,
   },
   sheetSubmitText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },

@@ -12,6 +12,18 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BASE_URL } from '@/config/api';
+const C = {
+  primary: '#EF2D24',
+  white: '#FFFFFF',
+  grey: '#88898E',
+  lightBg: '#F5F5F7',
+  dark: '#1A1A1A',
+  border: '#E5E7EB',
+  inputBg: '#F9FAFB',
+  blue:'#126bc4',
+  blue2:'#509597',
+  green:'#328332',
+};
 
 export default function ResetPassword() {
   const router = useRouter();
@@ -80,7 +92,7 @@ export default function ResetPassword() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.card}>
-        <Ionicons name="lock-closed-outline" size={60} color="#d32f2f" />
+        <Ionicons name="lock-closed-outline" size={60} color={C.primary} />
 
         <Text style={styles.title}>Changer le mot de passe</Text>
 
@@ -158,7 +170,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   button: {
-    backgroundColor: '#d32f2f',
+    backgroundColor: C.blue,
     padding: 15,
     borderRadius: 10,
     width: '100%',

@@ -16,6 +16,17 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
 import { BASE_URL } from '@/config/api';
+const C = {
+  primary: '#EF2D24',
+  white: '#FFFFFF',
+  grey: '#88898E',
+  lightBg: '#F5F5F7',
+  dark: '#1A1A1A',
+  border: '#E5E7EB',
+  inputBg: '#F9FAFB',
+  blue:'#126bc4',
+  green:'#328332',
+};
 
 interface NewCorrespondantProps {
   visible: boolean;
@@ -32,7 +43,7 @@ export default function NewCorrespondant({
   onSave,
   idclient,
 }: NewCorrespondantProps) {
-  const [nom, setNom] = useState('');
+  const [nomCoresp, setNomCoresp] = useState('');
   const [poste, setPoste] = useState('');
   const [contact, setContact] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -40,12 +51,12 @@ export default function NewCorrespondant({
   const { user } = useAuth();
 
   const handleSave = async () => {
-    if (!nom.trim() || !idclient) return;
+    if (!nomCoresp.trim() || !idclient) return;
 
     try {
       const payload = {
         idclient: idclient,
-        nom: nom,
+        nom: nomCoresp,
         poste: poste,
         contact: contact,
       };
@@ -168,7 +179,7 @@ export default function NewCorrespondant({
   };
 
   const resetForm = () => {
-    setNom('');
+    setNomCoresp('');
     setPoste('');
     setContact('');
   };
@@ -197,7 +208,7 @@ export default function NewCorrespondant({
         >
           <View style={styles.modalCard}>
             {/* Header */}
-            <View style={styles.header}>
+            <View style={styles.header2}>
               <View style={styles.iconContainer}>
                 <Text style={styles.icon}>
                   👨‍💼
@@ -205,41 +216,41 @@ export default function NewCorrespondant({
               </View>
 
               <View style={{ flex: 1 }}>
-                <Text style={styles.title}>
+                <Text style={styles.title2}>
                   Nouveau correspondant
                 </Text>
 
-                <Text style={styles.subtitle}>
+                <Text style={styles.subtitle2}>
                   Ajouter un contact client
                 </Text>
               </View>
             </View>
 
             {/* Nom */}
-            <View style={styles.field}>
-              <Text style={styles.label}>
+            <View style={styles.field2}>
+              <Text style={styles.label2}>
                 Nom{' '}
-                <Text style={styles.required}>
+                <Text style={styles.required2}>
                   *
                 </Text>
               </Text>
 
               <TextInput
-                style={styles.input}
+                style={styles.input2}
                 placeholder="Nom du correspondant"
-                value={nom}
-                onChangeText={setNom}
+                value={nomCoresp}
+                onChangeText={setNomCoresp}
               />
             </View>
 
             {/* Poste */}
-            <View style={styles.field}>
-              <Text style={styles.label}>
+            <View style={styles.field2}>
+              <Text style={styles.label2}>
                 Poste
               </Text>
 
               <TextInput
-                style={styles.input}
+                style={styles.input2}
                 placeholder="Ex : Directeur, Responsable achat..."
                 value={poste}
                 onChangeText={setPoste}
@@ -247,13 +258,13 @@ export default function NewCorrespondant({
             </View>
 
             {/* Contact */}
-            <View style={styles.field}>
-              <Text style={styles.label}>
+            <View style={styles.field2}>
+              <Text style={styles.label2}>
                 Contact
               </Text>
 
               <TextInput
-                style={styles.input}
+                style={styles.input2}
                 placeholder="Téléphone ou email"
                 keyboardType="phone-pad"
                 value={contact}
@@ -284,8 +295,8 @@ export default function NewCorrespondant({
 
             {/* Toast */}
             {submitted && (
-              <View style={styles.toast}>
-                <Text style={styles.toastText}>
+              <View style={styles.toast2}>
+                <Text style={styles.toastText2}>
                   ✓ Correspondant ajouté
                 </Text>
               </View>
@@ -298,7 +309,7 @@ export default function NewCorrespondant({
 }
 
 const styles = StyleSheet.create({
-  overlay: {
+overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'center',
@@ -317,7 +328,7 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
 
-  header: {
+  header2: {
     flexDirection: 'row',
     marginBottom: 24,
     alignItems: 'center',
@@ -337,33 +348,33 @@ const styles = StyleSheet.create({
     fontSize: 24,
   },
 
-  title: {
+  title2: {
     fontSize: 20,
     fontWeight: '700',
     color: '#111827',
   },
 
-  subtitle: {
+  subtitle2: {
     marginTop: 4,
     color: '#6b7280',
     fontSize: 14,
   },
 
-  field: {
+  field2: {
     marginBottom: 18,
   },
 
-  label: {
+  label2: {
     marginBottom: 8,
     fontWeight: '600',
     color: '#374151',
   },
 
-  required: {
+  required2: {
     color: '#d71f27',
   },
 
-  input: {
+  input2: {
     backgroundColor: '#f3f4f6',
     borderWidth: 1,
     borderColor: '#e5e7eb',
@@ -395,7 +406,7 @@ const styles = StyleSheet.create({
 
   saveButton: {
     flex: 1,
-    backgroundColor: '#d71f27',
+    backgroundColor: C.blue,
     borderRadius: 14,
     paddingVertical: 15,
     alignItems: 'center',
@@ -406,14 +417,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
-  toast: {
+  toast2: {
     marginTop: 16,
     backgroundColor: '#dcfce7',
     padding: 12,
     borderRadius: 12,
   },
 
-  toastText: {
+  toastText2: {
     color: '#166534',
     fontWeight: '700',
     textAlign: 'center',

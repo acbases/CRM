@@ -19,9 +19,24 @@ from 'react-native-keyboard-aware-scroll-view';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { BASE_URL } from '@/config/api';
+import { useRouter } from 'expo-router';
+
+const C = {
+  primary: '#EF2D24',
+  white: '#FFFFFF',
+  grey: '#88898E',
+  lightBg: '#F5F5F7',
+  dark: '#1A1A1A',
+  border: '#E5E7EB',
+  inputBg: '#F9FAFB',
+  blue:'#126bc4',
+  blue2:'#509597',
+  green:'#328332',
+};
 interface CategorieClient {
   id: number;
   intitule: string;
+  statut: string;
 }
 
 interface Agence {
@@ -37,6 +52,7 @@ interface Fournisseur {
 }
 
 export default function NewClientScreen() {
+  const router = useRouter();
   const [categorie, setCategorie] = useState('');
   const [nom, setNom] = useState('');
   const [latitude, setLatitude] = useState('');
@@ -51,6 +67,7 @@ export default function NewClientScreen() {
   const [dataFournisseurs, setDataFournisseurs] = useState<Fournisseur[]>([]);
 
   const [categorieId, setCategorieId] = useState<number | null>(null);
+  const [categorieStatut, setCategorieStatut] = useState<string | null>(null);
   const [agenceId, setAgenceId] = useState<number | null>(null);
 
   const [loading, setLoading] = useState(true);
@@ -71,9 +88,19 @@ export default function NewClientScreen() {
   ]);
 
   const [idClientCreated, setIdClientCreated] = useState<number | null>(null);
+
   const [dataZones, setDataZones] = useState<string[]>([]);
   const [zoneSuggestions, setZoneSuggestions] = useState<string[]>([]);
   const [showZoneSuggestions, setShowZoneSuggestions] = useState(false);
+
+  const [dataQuartiers, setDataQuartiers] = useState<string[]>([]);
+  const [quartierSuggestions, setQuartierSuggestions] = useState<string[]>([]);
+  const [showQuartierSuggestions, setShowQuartierSuggestions] = useState(false);
+
+    const [nomCoresp, setNomCoresp] = useState('');
+    const [poste, setPoste] = useState('');
+    const [contact, setContact] = useState('');
+    const [submitted2, setSubmitted2] = useState(false);
 
   const handleZoneChange = (text: string) => {
     setZone(text);
@@ -103,6 +130,13 @@ export default function NewClientScreen() {
     fetch(`${BASE_URL}/zone`)
       .then(res => res.json())
       .then(json => setDataZones(Array.isArray(json) ? json : []))
+      .catch(err => setError(err.message));
+  }, []);
+
+  useEffect(() => {
+    fetch(`${BASE_URL}/quartier`)
+      .then(res => res.json())
+      .then(json => setDataQuartiers(Array.isArray(json) ? json : []))
       .catch(err => setError(err.message));
   }, []);
 
@@ -143,6 +177,8 @@ export default function NewClientScreen() {
       },
     ]);
   };
+
+
 
   const getCurrentLocation = async () => {
   try {
@@ -233,141 +269,233 @@ export default function NewClientScreen() {
     );
   };
 
-  /* ===================== SUBMIT ===================== */
+  const handleQuartierChange = (text: string) => {
+    setQuartier(text);
 
-  const handleSubmit = async () => {
-    try {
-      setLoading(true);
-
-      /* =====================
-        1. CREATE CLIENT
-      ===================== */
-      const clientPayload = {
-        nom: nom,
-        latitude: latitude ? parseFloat(latitude) : null,
-        longitude: longitude ? parseFloat(longitude) : null,
-        zone: zone,
-        quartier: quartier,
-        idagence: agenceId,
-        idcategorie: categorieId,
-      };
-
-      const clientRes = await fetch(
-        `${BASE_URL}/client`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(clientPayload),
-        }
+    if (text.trim().length > 0) {
+      const filtered = dataQuartiers.filter(q =>
+        q.toLowerCase().includes(text.toLowerCase())
       );
 
-      if (!clientRes.ok) {
-        throw new Error(await clientRes.text());
-      }
-
-      const clientData = await clientRes.json();
-      const idclient = clientData.id;
-      setIdClientCreated(clientData.id);
-
-      console.log('CLIENT CREATED:', clientData);
-
-      /* =====================
-        2. RESOLVE FOURNISSEURS
-        (existing or create)
-      ===================== */
-
-      const resolvedFournisseurs = await Promise.all(
-        fournisseurs.map(async (f) => {
-          // check exist locally
-          let exist = dataFournisseurs.find(
-            (df) =>
-              df.nom.trim().toLowerCase() ===
-              f.nom.trim().toLowerCase()
-          );
-
-          // if not exist → create
-          if (!exist) {
-            const res = await fetch(
-              `${BASE_URL}/fournisseur`,
-              {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({ nom: f.nom }),
-              }
-            );
-
-            exist = await res.json();
-          }
-
-          return exist;
-        })
-      );
-
-      console.log('FOURNISSEURS RESOLVED:', resolvedFournisseurs);
-
-      /* =====================
-        3. LINK CLIENT - FOURNISSEURS
-      ===================== */
-
-      await Promise.all(
-        resolvedFournisseurs
-          .filter((f): f is { id: number; nom: string } => f != null)
-          .map((f) => (
-              fetch(
-              `${BASE_URL}/fournisseurClient`,
-              {
-                  method: 'POST',
-                  headers: {
-                  'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({
-                  idclient: idclient,
-                  idfournisseur: f.id,
-                  }),
-              }
-              )
-          )
-        )
-      );
-
-      /* =====================
-        4. SUCCESS UI
-      ===================== */
-
-      setSubmitted(true);
-
-      setNom('');
-      setLatitude('');
-      setLongitude('');
-      setZone('');
-      setQuartier('');
-
-      setAgenceId(null);
-      setAgence('');
-      setCategorieId(null);
-      setCategorie('');
-
-
-      // reset fournisseurs
-      setFournisseurs([]);
-
-      // reset erreurs
-      setError('');
-
-      setTimeout(() => {
-        setShowCorrespondant(true);
-      }, 500);
-    } catch (error: any) {
-      console.error('ERROR HANDLE SUBMIT:', error);
-      setError(error.message || 'Erreur lors de la création');
-    } finally {
-      setLoading(false);
+      setQuartierSuggestions(filtered);
+      setShowQuartierSuggestions(true);
+    } else {
+      setQuartierSuggestions([]);
+      setShowQuartierSuggestions(false);
     }
   };
+
+  const selectQuartier = (value: string) => {
+    setQuartier(value);
+    setQuartierSuggestions([]);
+    setShowQuartierSuggestions(false);
+  };
+
+  /* ===================== SUBMIT ===================== */
+const resetForm = () => {
+  setNomCoresp('');
+  setPoste('');
+  setContact('');
+
+  setNom('');
+  setLatitude('');
+  setLongitude('');
+  setZone('');
+  setQuartier('');
+  setQuartierSuggestions([]);
+  setShowQuartierSuggestions(false);
+
+  setAgenceId(null);
+  setAgence('');
+  setCategorieId(null);
+  setCategorie('');
+
+  setFournisseurs([]);
+  setError('');
+};
+
+const createClient = async () => {
+  const clientPayload = {
+    nom,
+    latitude: latitude ? parseFloat(latitude) : null,
+    longitude: longitude ? parseFloat(longitude) : null,
+    zone,
+    quartier,
+    idagence: agenceId,
+    idcategorie: categorieId,
+  };
+
+  const res = await fetch(`${BASE_URL}/client`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(clientPayload),
+  });
+
+  if (!res.ok) throw new Error(await res.text());
+
+  const data = await res.json();
+  setIdClientCreated(data.id);
+
+  return data.id;
+};
+
+const handleSubmit = async () => {
+  try {
+    setLoading(true);
+
+    // =====================
+    // 1. CREATE CLIENT
+    // =====================
+    const idclient = await createClient();
+
+    console.log("CLIENT CREATED:", idclient);
+
+    // =====================
+    // 2. FOURNISSEURS (SAFE VERSION - FIX ERROR TS)
+    // =====================
+    const resolvedFournisseurs = await Promise.all(
+      fournisseurs.map(async (f: Fournisseur) => {
+        const nomF = f?.nom?.trim()?.toLowerCase();
+
+        if (!nomF) return null;
+
+        let exist = dataFournisseurs.find(
+          (df) =>
+            df?.nom?.trim()?.toLowerCase() === nomF
+        );
+
+        if (!exist) {
+          const res = await fetch(`${BASE_URL}/fournisseur`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ nom: f.nom }),
+          });
+
+          if (!res.ok) {
+            throw new Error(await res.text());
+          }
+
+          exist = await res.json();
+        }
+
+        return exist;
+      })
+    );
+
+    console.log("FOURNISSEURS RESOLVED:", resolvedFournisseurs);
+
+    // =====================
+    // 3. LINK FOURNISSEURS
+    // =====================
+    await Promise.all(
+      resolvedFournisseurs
+        .filter((f): f is { id: number; nom: string } => !!f && !!f.id)
+        .map((f) =>
+          fetch(`${BASE_URL}/fournisseurClient`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              idclient,
+              idfournisseur: f.id,
+            }),
+          })
+        )
+    );
+
+    console.log("FOURNISSEURS LINKED");
+
+    // =====================
+    // 4. CREATE CORRESPONDANT
+    // =====================
+    const correspondantRes = await fetch(`${BASE_URL}/correspondant`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        idclient,
+        nom: nomCoresp,
+        poste,
+        contact,
+      }),
+    });
+
+    if (!correspondantRes.ok) {
+      throw new Error(await correspondantRes.text());
+    }
+
+    const correspondant = await correspondantRes.json();
+    const idcorrespondant = correspondant.id;
+
+    console.log("CORRESPONDANT CREATED:", correspondant);
+
+    // =====================
+    // 5. LINK CORRESPONDANT
+    // =====================
+    const linkRes = await fetch(`${BASE_URL}/correspondantClient`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        idclient,
+        idcorrespondant,
+      }),
+    });
+
+    if (!linkRes.ok) {
+      throw new Error(await linkRes.text());
+    }
+
+    console.log("CORRESPONDANT LINKED");
+
+    // =====================
+    // 6. SUCCESS
+    // =====================
+
+    // const prospect={
+    //   idclient:idclient,
+    //   idcategorieClient:categorieId,
+    //   zone:zone,
+    //   quartier:quartier,
+    // }    
+
+
+    if (categorieStatut==='B2B'){
+      router.push({
+          pathname: '/rapportB2B',
+          params: {
+            prospect:idclient,
+          },
+      });
+    }else {
+        router.push({
+          pathname: '/rapportRetail',
+          params: {
+            prospect:idclient,
+          },
+        });
+      }
+
+    setSubmitted(true);
+    setShowCorrespondant(false);
+
+    setTimeout(() => {
+      setSubmitted(false);
+      resetForm();
+    }, 1200);
+
+  } catch (error: any) {
+    console.error("ERROR HANDLE SUBMIT:", error);
+    setError(error.message || "Erreur lors de la création");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     if (submitted) {
@@ -548,8 +676,27 @@ export default function NewClientScreen() {
                 style={styles.input}
                 placeholder="Nom du quartier"
                 value={quartier}
-                onChangeText={setQuartier}
+                onChangeText={handleQuartierChange}
+                onFocus={() => {
+                  if (quartier.trim().length > 0) {
+                    setShowQuartierSuggestions(true);
+                  }
+                }}
               />
+
+              {showQuartierSuggestions && quartierSuggestions.length > 0 && (
+                <View style={styles.suggestionBox}>
+                  {quartierSuggestions.map((item, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.suggestionItem}
+                      onPress={() => selectQuartier(item)}
+                    >
+                      <Text>{item}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
 
             <View style={styles.divider} />
@@ -643,7 +790,7 @@ export default function NewClientScreen() {
             {/* BOUTON */}
             <TouchableOpacity
               style={styles.submitButton}
-              onPress={handleSubmit}
+              onPress={() => setShowCorrespondant(true)}
             >
               <Ionicons name="checkmark-outline" size={18} color="#fff" style={{ marginRight: 6 }} />
               <Text style={styles.submitButtonText}>
@@ -677,6 +824,7 @@ export default function NewClientScreen() {
                       onPress={() => {
                         setCategorie(item.intitule);
                         setCategorieId(item.id);
+                        setCategorieStatut(item.statut)
                         setCategoryModalVisible(
                           false
                         );
@@ -749,13 +897,127 @@ export default function NewClientScreen() {
           )}
         </ScrollView>
       </KeyboardAwareScrollView>
-      <NewCorrespondant
+      <Modal
+        visible={showCorrespondant}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCorrespondant(false)}
+      >
+        <View style={styles.overlay}>
+          <KeyboardAvoidingView
+            behavior={
+              Platform.OS === 'ios'
+                ? 'padding'
+                : undefined
+            }
+            style={styles.keyboardContainer}
+          >
+            <View style={styles.modalCard}>
+              {/* Header */}
+              <View style={styles.header2}>
+                <View style={styles.iconContainer}>
+                  <Text style={styles.icon}>
+                    👨‍💼
+                  </Text>
+                </View>
+  
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.title2}>
+                    Nouveau correspondant
+                  </Text>
+  
+                  <Text style={styles.subtitle2}>
+                    Ajouter un contact client
+                  </Text>
+                </View>
+              </View>
+  
+              {/* Nom */}
+              <View style={styles.field2}>
+                <Text style={styles.label2}>
+                  Nom{' '}
+                  <Text style={styles.required2}>
+                    *
+                  </Text>
+                </Text>
+  
+                <TextInput
+                  style={styles.input2}
+                  placeholder="Nom du correspondant"
+                  value={nomCoresp}
+                  onChangeText={setNomCoresp}
+                />
+              </View>
+  
+              {/* Poste */}
+              <View style={styles.field2}>
+                <Text style={styles.label2}>
+                  Poste
+                </Text>
+  
+                <TextInput
+                  style={styles.input2}
+                  placeholder="Ex : Directeur, Responsable achat..."
+                  value={poste}
+                  onChangeText={setPoste}
+                />
+              </View>
+  
+              {/* Contact */}
+              <View style={styles.field2}>
+                <Text style={styles.label2}>
+                  Contact
+                </Text>
+  
+                <TextInput
+                  style={styles.input2}
+                  placeholder="Téléphone ou email"
+                  keyboardType="phone-pad"
+                  value={contact}
+                  onChangeText={setContact}
+                />
+              </View>
+  
+              {/* Buttons */}
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.cancelButton}
+                  onPress={() => setShowCorrespondant(false)}
+                >
+                  <Text style={styles.cancelText}>
+                    Annuler
+                  </Text>
+                </TouchableOpacity>
+  
+                <TouchableOpacity
+                  style={styles.saveButton}
+                  onPress={handleSubmit}
+                >
+                  <Text style={styles.saveText}>
+                    ✓ Enregistrer
+                  </Text>
+                </TouchableOpacity>
+              </View>
+  
+              {/* Toast */}
+              {submitted && (
+                <View style={styles.toast2}>
+                  <Text style={styles.toastText2}>
+                    ✓ Correspondant ajouté
+                  </Text>
+                </View>
+              )}
+            </View>
+          </KeyboardAvoidingView>
+        </View>
+      </Modal>
+      {/* <NewCorrespondant
         visible={showCorrespondant}
         prospect={1}
         idclient={idClientCreated}
         onClose={() => setShowCorrespondant(false)}
         onSave={(data) => console.log(data)}
-      />
+      /> */}
     </SafeAreaView>
   );
 }
@@ -787,7 +1049,7 @@ const styles = StyleSheet.create({
     width: 55,
     height: 55,
     borderRadius: 16,
-    backgroundColor: '#EF2D24',
+    backgroundColor: C.primary,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -937,7 +1199,7 @@ suggestionItem: {
   },
 
   submitButton: {
-    backgroundColor: '#EF2D24',
+    backgroundColor: C.blue,
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: 'center',
@@ -994,7 +1256,7 @@ suggestionItem: {
     textAlign: 'center',
   },
   locationBtn: {
-  backgroundColor: '#88898E',
+  backgroundColor: C.blue2,
   padding: 12,
   borderRadius: 12,
   alignItems: 'center',
@@ -1002,4 +1264,124 @@ suggestionItem: {
   flexDirection: 'row',
   justifyContent: 'center',
 },
+overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+
+  keyboardContainer: {
+    width: '100%',
+  },
+
+  modalCard: {
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 22,
+    elevation: 8,
+  },
+
+  header2: {
+    flexDirection: 'row',
+    marginBottom: 24,
+    alignItems: 'center',
+  },
+
+  iconContainer: {
+    width: 55,
+    height: 55,
+    borderRadius: 16,
+    backgroundColor: '#d71f27',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+
+  icon: {
+    fontSize: 24,
+  },
+
+  title2: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+  },
+
+  subtitle2: {
+    marginTop: 4,
+    color: '#6b7280',
+    fontSize: 14,
+  },
+
+  field2: {
+    marginBottom: 18,
+  },
+
+  label2: {
+    marginBottom: 8,
+    fontWeight: '600',
+    color: '#374151',
+  },
+
+  required2: {
+    color: '#d71f27',
+  },
+
+  input2: {
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    fontSize: 15,
+    color: '#111827',
+  },
+
+  buttonContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 12,
+  },
+
+  cancelButton: {
+    flex: 1,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+
+  cancelText: {
+    color: '#374151',
+    fontWeight: '600',
+  },
+
+  saveButton: {
+    flex: 1,
+    backgroundColor: C.blue,
+    borderRadius: 14,
+    paddingVertical: 15,
+    alignItems: 'center',
+  },
+
+  saveText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+
+  toast2: {
+    marginTop: 16,
+    backgroundColor: '#dcfce7',
+    padding: 12,
+    borderRadius: 12,
+  },
+
+  toastText2: {
+    color: '#166534',
+    fontWeight: '700',
+    textAlign: 'center',
+  },
 });

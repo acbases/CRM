@@ -20,6 +20,7 @@ const C = {
   grey: '#88898E',
   lightBg: '#F5F5F7',
   dark: '#1A1A1A',
+  blue:'#4a97e4',
 };
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
@@ -37,21 +38,21 @@ const ACTIONS: ActionItem[] = [
     title: 'Visite',
     desc: 'Gérer mes visites planifiées',
     icon: 'navigate-outline',
-    bg: C.primary,
+    bg: '#4a97e4',
     route: '/planning',
   },
   {
     title: 'Prospection',
     desc: 'Ajouter un nouveau client',
     icon: 'search-outline',
-    bg: '#2C3E50',
+    bg: '#30669c',
     route: '/newClient',
   },
   {
     title: 'Nouvelle Visite',
     desc: ' *Visite non planifiée',
     icon: 'calendar-outline',
-    bg: C.grey,
+    bg: '#214768',
     route: '/newVisite',
   },
 ];
@@ -143,7 +144,11 @@ export default function Accueil() {
             Bonjour{firstName ? `, ${firstName}` : ''} !
           </Text>
           <Text style={styles.subtitle}>
-            Vous avez actuellement {totalVisitesStatut0} visite(s) planifiée(s).
+            Vous avez actuellement{' '}
+            <Text style={styles.highlightCount}>
+              {totalVisitesStatut0}
+            </Text>{' '}
+            visite(s) planifiée(s).
           </Text>
         </View>
 
@@ -191,6 +196,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 8,
   },
+  highlightCount: {
+  color: '#06a046',
+  fontWeight: '700',
+  fontSize: 18,
+},
   logo: { width: 96, height: 96, marginBottom: 16 },
   greeting: {
     fontSize: 22,

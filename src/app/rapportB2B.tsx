@@ -21,6 +21,8 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import PageHeader from '@/components/PageHeader';
 import NewCorrespondant from './components/newCorrespondant';
 import { BASE_URL } from '../config/api';
+import { useAuth } from '@/context/AuthContext';
+import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
 
 const C = {
   primary: '#EF2D24',
@@ -29,6 +31,10 @@ const C = {
   lightBg: '#F5F5F7',
   dark: '#1A1A1A',
   border: '#E5E7EB',
+  inputBg: '#F9FAFB',
+  blue:'#126bc4',
+  blue2:'#509597',
+  green:'#328332',
 };
 
 interface Correspondant {
@@ -64,7 +70,7 @@ interface Visite {
     quartier: string;
     idagence: number;
     idcategorie: number;
-    categorie_client: { id: number; intitule: string };
+    categorie_client: { id: number; intitule: string; statut: string; };
   };
   categorie_visite: { id: number; intitule: string };
   type_visite: { id: number; nom: string } | null;
@@ -72,6 +78,8 @@ interface Visite {
 
 export default function RapportB2BScreen() {
   const { idVisite } = useLocalSearchParams();
+  const { prospect } = useLocalSearchParams();
+
   const router = useRouter();
 
   const [correspondants, setCorrespondants] = useState<Correspondant[]>([]);
@@ -88,6 +96,23 @@ export default function RapportB2BScreen() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
+  const [client, setClient]= useState<any | null>(null);
+  const { user } = useAuth();
+
+  const { body } = useLocalSearchParams();
+    const v= body
+    ? JSON.parse(body as string) as {
+        idClient:number;
+        idutilisateur: number;
+        idcategorie: number;
+        date: string;
+        statut: number;
+        type: number;
+        idtype: number;
+        object: string;
+      }
+    : null;
+
   useEffect(() => {
     fetch(`${BASE_URL}/visite/${idVisite}`)
       .then((res) => res.json())
@@ -97,15 +122,23 @@ export default function RapportB2BScreen() {
   }, []);
 
   useEffect(() => {
-    if (visite) {
-      fetch(
-        `${BASE_URL}/correspondantClientByIdClient/${visite.client.id}`
-      )
-        .then((res) => res.json())
-        .then((json) => setCorrespondants(Array.isArray(json) ? json : []))
-        .catch(() => {});
-    }
-  }, [visite]);
+    fetch(`${BASE_URL}/client/${prospect}`)
+      .then((res) => res.json())
+      .then((json) => setClient(json))
+      .catch((err) => Alert.alert('Erreur', err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    const idClient = visite?.client?.id ?? prospect;
+
+    if (!idClient) return;
+
+    fetch(`${BASE_URL}/correspondantClientByIdClient/${idClient}`)
+      .then((res) => res.json())
+      .then((json) => setCorrespondants(Array.isArray(json) ? json : []))
+      .catch(() => {});
+  }, [visite, prospect]);
 
   const pickImage = () => {
     Alert.alert('Photo', 'Choisissez une source', [
@@ -158,12 +191,111 @@ export default function RapportB2BScreen() {
   };
 
   const handleSubmit = async () => {
+    
     if (!photo) {
       Alert.alert('Erreur', 'Veuillez ajouter une photo');
       return;
     }
     setSubmitting(true);
-    try {
+    if (!idVisite) {
+      const corps = {
+        idclient: prospect,
+        idutilisateur: user.id,
+        idcategorie: 5,
+        date: new Date().toISOString().split('T')[0],
+        statut: 0,
+        type: 1,
+        idtype: 2,
+        object: null,
+      };
+
+      const response = await fetchWithTimeout(
+        `${BASE_URL}/visite`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify(corps),
+        }
+      );
+
+      console.log('Status:', response.status);
+
+      const text = await response.text();
+      console.log('Réponse brute:', text);
+
+      let result;
+      
+      console.log('TEXT VISITE :', text);
+
+      try {
+        result = JSON.parse(text);
+        console.log('RESULTAT VISITE :', result);
+      } catch {
+        throw new Error('Réponse serveur invalide');
+      }
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Erreur insertion visite');
+      }
+
+      const idVisite2 = result.id; 
+      try {
+        const formData = new FormData();
+        formData.append('idvisite', String(idVisite2));
+        formData.append('description', description);
+        formData.append('action_a_faire', actionAFaire);
+        formData.append('prochaine_visite', dateRdv ? dateRdv.toISOString().split('T')[0] : '');
+        formData.append(
+          'idcorrespondant',
+          selectedCorrespondant ? String(selectedCorrespondant.correspondant.id) : ''
+        );
+
+        const filename = photo.split('/').pop() || 'photo.jpg';
+        const match = /\.(\w+)$/.exec(filename);
+        formData.append('sary', {
+          uri: photo,
+          name: filename,
+          type: match ? `image/${match[1]}` : 'image/jpeg',
+        } as any);
+
+        const response = await fetch(
+          `${BASE_URL}/rapportB2B`,
+          { method: 'POST', body: formData, headers: { Accept: 'application/json' } }
+        );
+
+        const text = await response.text();
+        let data: any;
+        try { data = JSON.parse(text); } catch { data = { raw: text }; }
+
+        if (!response.ok) {
+          Alert.alert('Erreur', JSON.stringify(data));
+          return;
+        }
+
+        await fetch(`${BASE_URL}/visite/${idVisite}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({ statut: 1 }),
+        }).catch(() => {});
+
+        Alert.alert('Succès', 'Rapport enregistré avec succès');
+        setDescription('');
+        setActionAFaire('');
+        setPhoto(null);
+        setDateRdv(new Date());
+        setSelectedCorrespondant(null);
+        router.replace('/planning');
+      } catch (err: any) {
+        Alert.alert('Erreur', err.message ?? 'Erreur serveur');
+      } finally {
+        setSubmitting(false);
+      }
+    }
+    else{
+      try {
       const formData = new FormData();
       formData.append('idvisite', String(idVisite));
       formData.append('description', description);
@@ -214,6 +346,8 @@ export default function RapportB2BScreen() {
     } finally {
       setSubmitting(false);
     }
+   }
+    
   };
 
   if (loading) {
@@ -239,9 +373,9 @@ export default function RapportB2BScreen() {
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
           {/* Infos client */}
-          {visite?.client && (
+          {visite?.client ? (
             <View style={styles.clientCard}>
-              <Text style={styles.clientName}>{visite.client.nom}</Text>
+              <Text style={styles.clientName}>{visite.client.nom }</Text>
               <View style={styles.clientRow}>
                 <Ionicons name="pricetag-outline" size={13} color={C.grey} style={styles.rowIcon} />
                 <Text style={styles.clientMeta}>
@@ -252,6 +386,22 @@ export default function RapportB2BScreen() {
                 <Ionicons name="location-outline" size={13} color={C.grey} style={styles.rowIcon} />
                 <Text style={styles.clientMeta}>
                   {visite.client.zone} — {visite.client.quartier}
+                </Text>
+              </View>
+            </View>
+          ) : (
+            <View style={styles.clientCard}>
+              <Text style={styles.clientName}>{client?.nom }</Text>
+              <View style={styles.clientRow}>
+                <Ionicons name="pricetag-outline" size={13} color={C.grey} style={styles.rowIcon} />
+                <Text style={styles.clientMeta}>
+                  {client?.categorie_client?.intitule || '—'}
+                </Text>
+              </View>
+              <View style={styles.clientRow}>
+                <Ionicons name="location-outline" size={13} color={C.grey} style={styles.rowIcon} />
+                <Text style={styles.clientMeta}>
+                  {client?.zone} — {client?.quartier}
                 </Text>
               </View>
             </View>
@@ -422,16 +572,25 @@ export default function RapportB2BScreen() {
       <NewCorrespondant
         visible={showCorrespondant}
         prospect={0}
-        idclient={visite?.idclient ?? null}
+        idclient={Number(visite?.idclient ?? prospect)}
         onClose={() => setShowCorrespondant(false)}
         onSave={async () => {
           setShowCorrespondant(false);
-          if (visite?.client?.id) {
+
+          const idClient =
+            visite?.client?.id ?? visite?.idclient ?? prospect;
+
+          if (!idClient) return;
+
+          try {
             const res = await fetch(
-              `${BASE_URL}/correspondantClientByIdClient/${visite.client.id}`
+              `${BASE_URL}/correspondantClientByIdClient/${idClient}`
             );
+
             const json = await res.json();
             setCorrespondants(Array.isArray(json) ? json : []);
+          } catch (e) {
+            setCorrespondants([]);
           }
         }}
       />
@@ -505,7 +664,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: C.grey,
+    backgroundColor: C.blue2,
     padding: 14,
     borderRadius: 12,
   },
@@ -516,7 +675,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: C.primary,
+    backgroundColor: C.blue,
     paddingVertical: 16,
     borderRadius: 14,
     marginTop: 8,

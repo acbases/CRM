@@ -18,9 +18,12 @@ const C = {
   primary: '#EF2D24',
   white: '#FFFFFF',
   grey: '#88898E',
+  lightBg: '#F5F5F7',
   dark: '#1A1A1A',
   border: '#E5E7EB',
-  inputBg: '#F3F4F6',
+  inputBg: '#F9FAFB',
+  blue:'#126bc4',
+  green:'#328332',
 };
 
 interface FournisseurItem { id: number; nom: string; }
@@ -230,7 +233,7 @@ const styles = StyleSheet.create({
   },
   cancelText: { color: C.dark, fontWeight: '600' },
   saveBtn: {
-    flex: 1, backgroundColor: C.primary, borderRadius: 12, paddingVertical: 13,
+    flex: 1, backgroundColor: C.blue, borderRadius: 12, paddingVertical: 13,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
   },
   saveText: { color: C.white, fontWeight: '700' },

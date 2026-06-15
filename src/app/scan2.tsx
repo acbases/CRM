@@ -20,6 +20,7 @@ export default function Scan2Screen() {
   const { body } = useLocalSearchParams();
   const visite = body
   ? JSON.parse(body as string) as {
+      idClient:number;
       idutilisateur: number;
       idcategorie: number;
       date: string;

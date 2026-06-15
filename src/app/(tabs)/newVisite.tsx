@@ -19,6 +19,7 @@ import { useAuth } from '@/context/AuthContext';
 import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
 import { BASE_URL } from '@/config/api';
 import { useRouter } from 'expo-router';
+import { Animated, Easing } from 'react-native';
 
 
 const C = {
@@ -29,6 +30,8 @@ const C = {
   dark: '#1A1A1A',
   border: '#E5E7EB',
   inputBg: '#F9FAFB',
+  blue:'#126bc4',
+  green:'#328332',
 };
 
 interface Client {
@@ -45,6 +48,7 @@ interface Client {
 interface CategorieClient {
   id: number;
   intitule: string;
+  statut: string;
 }
 
 interface Agence {
@@ -92,6 +96,9 @@ export default function NewVisiteScreen() {
   const [clientId, setClientId] = useState<number | null>(null);
   const { user } = useAuth();
   const router = useRouter();
+  const [isB2B, setIsB2B] = useState(false);
+
+  const anim = useState(new Animated.Value(0))[0];
 
   useEffect(() => {
     fetchWithTimeout(`${BASE_URL}/clients`)
@@ -135,6 +142,17 @@ export default function NewVisiteScreen() {
     return matchNom && matchType && matchAgence;
   });
 
+  const toggleB2B = () => {
+    const newValue = !isB2B;
+    setIsB2B(newValue);
+
+    Animated.timing(anim, {
+      toValue: newValue ? 1 : 0,
+      duration: 200,
+      useNativeDriver: false,
+    }).start();
+  };
+
   const formatDate = (d: Date) => {
     const yyyy = d.getFullYear();
     const mm = String(d.getMonth() + 1).padStart(2, '0');
@@ -151,6 +169,9 @@ export default function NewVisiteScreen() {
     setObjectif(''); setDate(new Date());
     setShowClientList(false);
   };
+  const typeClientB2BList = typeClientList.filter(
+    (c) => c.statut === 'B2B'
+  );
 
   const handleSubmit = async () => {
     // if (!clientId || clientId < 1) {
@@ -163,7 +184,7 @@ export default function NewVisiteScreen() {
     }
     try {
       const body = {
-        // idclient: clientId,
+        idclient: clientId,
         idutilisateur: user.id,
         idcategorie: motifVisiteId,
         date: formatDate(date),
@@ -174,22 +195,59 @@ export default function NewVisiteScreen() {
       };
 
 
-      router.push({ pathname: '/scan2', params: { body: JSON.stringify(body)} });
-      // const response = await fetchWithTimeout(
-      //   `${BASE_URL}/visite`,
-      //   {
-      //     method: 'POST',
-      //     headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      //     body: JSON.stringify(body),
-      //   }
-      // );
-      // const text = await response.text();
-      // let result;
+      if (isB2B) {
+        const response = await fetchWithTimeout(
+          `${BASE_URL}/visite`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+            body: JSON.stringify(body),
+          }
+        );
 
-      // try { result = JSON.parse(text); } catch { throw new Error('Réponse serveur invalide'); }
-      // if (!response.ok) throw new Error(result.message || 'Erreur insertion visite');
-      // resetForm();
-      // Alert.alert('Succès', 'Visite enregistrée avec succès');
+        const text = await response.text();
+
+        let result;
+      
+        try {
+          result = JSON.parse(text);
+          
+        } catch {
+          throw new Error('Réponse serveur invalide');
+        }
+
+        if (!response.ok) {
+          throw new Error(result.message || 'Erreur insertion visite');
+        }
+
+        const idVisite = result.id;
+
+        router.push({
+          pathname: '/rapportB2B',
+          params: {
+            idVisite: String(idVisite),
+          },
+        });
+
+        resetForm();
+        Alert.alert('Succès', 'Visite enregistrée avec succès');
+      }
+
+      // =========================
+      // 🔥 CAS B2C → REDIRECTION
+      // =========================
+      else {
+        router.push({
+          pathname: '/scan2',
+          params: {
+            body: JSON.stringify(body),
+          },
+        });
+      }
+
     } catch (err: any) {
       Alert.alert('Erreur', err.message);
     }
@@ -209,6 +267,49 @@ export default function NewVisiteScreen() {
         enableOnAndroid
         extraScrollHeight={100}
       >
+    <View style={styles.field}>
+      {/* <View style={styles.labelRow}>
+        <Ionicons name="business-outline" size={14} color={C.grey} style={styles.labelIcon} />
+        <Text style={styles.label}>Visite B2B</Text>
+      </View> */}
+
+      <TouchableOpacity onPress={toggleB2B}>
+  <View style={styles.switchContainer}>
+    
+    <View style={[
+      styles.track,
+      { backgroundColor: isB2B ? C.green : C.grey }
+    ]} />
+
+    <Animated.View
+      style={[
+        styles.circle,
+        {
+          transform: [{
+            translateX: anim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [2, 22], // gauche → droite
+            }),
+          }],
+        },
+      ]}
+    >
+      <Ionicons
+        name={isB2B ? "checkmark" : "close"}
+        size={14}
+        color="#fff"
+      />
+    </Animated.View>
+
+  </View>
+  <Text style={[
+    styles.switchLabel,
+    { color: isB2B ? C.green : C.grey }
+  ]}>
+    {isB2B ? "B2B" : "B2B"}
+  </Text>
+</TouchableOpacity>
+    </View>
         {/* Nature visite */}
         <View style={styles.field}>
           <View style={styles.labelRow}>
@@ -245,43 +346,48 @@ export default function NewVisiteScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Type client 
-        <View style={styles.field}>
-          <View style={styles.labelRow}>
-            <Ionicons name="people-outline" size={14} color={C.grey} style={styles.labelIcon} />
-            <Text style={styles.label}>Type de client</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.select}
-            onPress={() => setModalTypeClient(true)}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.selectText, !typeClient && styles.placeholder]}>
-              {typeClient || 'Sélectionner...'}
-            </Text>
-            <Text style={styles.chevron}>▾</Text>
-          </TouchableOpacity>
-        </View>*/}
+        {/* Type client */}
+        {isB2B && (
+          <View style={styles.field}>
+            <View style={styles.labelRow}>
+              <Ionicons name="people-outline" size={14} color={C.grey} style={styles.labelIcon} />
+              <Text style={styles.label}>Type client (B2B)</Text>
+            </View>
 
-        {/* Agence 
-        <View style={styles.field}>
-          <View style={styles.labelRow}>
-            <Ionicons name="business-outline" size={14} color={C.grey} style={styles.labelIcon} />
-            <Text style={styles.label}>Agence client</Text>
+            <TouchableOpacity
+              style={styles.select}
+              onPress={() => setModalTypeClient(true)}
+            >
+              <Text style={[styles.selectText, !typeClient && styles.placeholder]}>
+                {typeClient || 'Sélectionner...'}
+              </Text>
+              <Text style={styles.chevron}>▾</Text>
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.select}
-            onPress={() => setModalAgence(true)}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.selectText, !agenceClient && styles.placeholder]}>
-              {agenceClient || 'Sélectionner...'}
-            </Text>
-            <Text style={styles.chevron}>▾</Text>
-          </TouchableOpacity>
-        </View>*/}
+        )}
 
-        {/* Client autocomplete 
+        {/* Agence */}
+        {isB2B && (
+          <View style={styles.field}>
+            <View style={styles.labelRow}>
+              <Ionicons name="business-outline" size={14} color={C.grey} style={styles.labelIcon} />
+              <Text style={styles.label}>Agence</Text>
+            </View>
+
+            <TouchableOpacity
+              style={styles.select}
+              onPress={() => setModalAgence(true)}
+            >
+              <Text style={[styles.selectText, !agenceClient && styles.placeholder]}>
+                {agenceClient || 'Sélectionner...'}
+              </Text>
+              <Text style={styles.chevron}>▾</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        
+        {/* Client autocomplete  */}
+        {isB2B && (
         <View style={styles.field}>
           <View style={styles.labelRow}>
             <Ionicons name="search-outline" size={14} color={C.grey} style={styles.labelIcon} />
@@ -316,7 +422,9 @@ export default function NewVisiteScreen() {
               ))}
             </View>
           )}
-        </View>*/}
+        </View>
+        )}
+        
 
         {/* Date */}
         <View style={styles.field}>
@@ -444,7 +552,7 @@ export default function NewVisiteScreen() {
             <View style={styles.handle} />
             <Text style={styles.sheetTitle}>Type de client</Text>
             <ScrollView>
-              {typeClientList.map((item) => (
+              {typeClientB2BList.map((item) => (
                 <TouchableOpacity
                   key={item.id}
                   style={styles.sheetItem}
@@ -490,6 +598,38 @@ export default function NewVisiteScreen() {
 }
 
 const styles = StyleSheet.create({
+  switchWrapper: {
+  flexDirection: 'row',
+  alignItems: 'center',
+},
+
+switchLabel: {
+  marginLeft: 10,
+  fontSize: 14,
+  fontWeight: '600',
+},
+  switchContainer: {
+  width: 50,
+  height: 28,
+  justifyContent: 'center',
+},
+
+track: {
+  width: 50,
+  height: 24,
+  borderRadius: 12,
+},
+
+circle: {
+  position: 'absolute',
+  width: 20,
+  height: 20,
+  borderRadius: 10,
+  backgroundColor: '#fff',
+  alignItems: 'center',
+  justifyContent: 'center',
+  elevation: 3,
+},
   safe: {
     flex: 1,
     backgroundColor: C.lightBg,
@@ -584,13 +724,13 @@ const styles = StyleSheet.create({
     color: C.dark,
   },
   submitBtn: {
-    backgroundColor: C.primary,
+    backgroundColor: C.blue,
     paddingVertical: 16,
     borderRadius: 14,
     alignItems: 'center',
     marginTop: 8,
     elevation: 4,
-    shadowColor: C.primary,
+    shadowColor: C.blue,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,

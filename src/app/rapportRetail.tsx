@@ -15,6 +15,8 @@ import { useLocalSearchParams, useRouter  } from 'expo-router';
 import { BASE_URL } from '@/config/api';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import PageHeader from '@/components/PageHeader';
+import { useAuth } from '@/context/AuthContext';
+import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
 
 const C = {
   primary: '#EF2D24',
@@ -23,11 +25,19 @@ const C = {
   lightBg: '#F5F5F7',
   dark: '#1A1A1A',
   border: '#E5E7EB',
+  inputBg: '#F9FAFB',
+  blue:'#126bc4',
+  blue2:'#509597',
+  green:'#328332',
 };
 
 export default function RapportRetail() {
-    const router = useRouter();
+  const router = useRouter();
+  const { user } = useAuth();
   const { idVisite, idClient  } = useLocalSearchParams();
+
+  const { prospect } = useLocalSearchParams();
+  const [client, setClient]= useState<any | null>(null);
 
   const [produits, setProduits] = useState<any[]>([]);
   const [plvs, setPlvs] = useState<any[]>([]);
@@ -40,6 +50,7 @@ export default function RapportRetail() {
   const [description, setDescription] = useState('');
   const [autrePlv, setAutrePlv] = useState('');
   const [debugLog, setDebugLog] = useState('');
+  const [loading, setLoading] = useState(true);
 
 const addLog = (title: string, data?: any) => {
   const msg =
@@ -49,65 +60,71 @@ const addLog = (title: string, data?: any) => {
   setDebugLog(prev => prev + '\n\n' + msg);
 };
 
+useEffect(() => {
+    fetch(`${BASE_URL}/client/${prospect}`)
+      .then((res) => res.json())
+      .then((json) => setClient(json))
+      .catch((err) => Alert.alert('Erreur', err.message))
+      .finally(() => setLoading(false));
+  }, []);
+
   // ===================== GET VISITE + PRODUITS =====================
 useEffect(() => {
+  if (!idVisite) return;
+
   addLog('FETCH VISITE START', { idVisite });
 
   fetch(`${BASE_URL}/visite/${idVisite}`)
-    .then(async res => {
+    .then(async (res) => {
       addLog('VISITE STATUS', res.status);
 
       const text = await res.text();
 
-      try {
-        const json = JSON.parse(text);
-        addLog('VISITE OK', json);
+      const json = JSON.parse(text);
 
-        setVisite(json);
+      addLog('VISITE OK', json);
 
-        return json;
-      } catch (e) {
-        addLog('VISITE PARSE ERROR', text);
-        throw e;
-      }
+      setVisite(json);
     })
-    .then(async json => {
-      addLog('FETCH PRODUITS START');
-
-      const prodRes = await fetch(
-        `${BASE_URL}/produits`
-      );
-
-      addLog('PRODUITS STATUS', prodRes.status);
-
-      const prodText = await prodRes.text();
-
-      try {
-        const prodData = JSON.parse(prodText);
-
-        addLog('PRODUITS OK', prodData);
-
-        setProduits(
-          prodData.map((p: any) => ({
-            id: p.id,
-            intitule: p.intitule,
-            selected: false,
-            prix_achat: '',
-            prix_vente_gros: '',
-            prix_vente_details: '',
-            cout_transport: '',
-            marge: '',
-            volume: '',
-          }))
-        );
-      } catch (e) {
-        addLog('PRODUITS PARSE ERROR', prodText);
-      }
-    })
-    .catch(err => {
+    .catch((err) => {
       addLog('VISITE FETCH ERROR', err);
     });
 }, [idVisite]);
+
+useEffect(() => {
+  addLog('FETCH PRODUITS START');
+
+  fetch(`${BASE_URL}/produits`)
+    .then(async (res) => {
+      addLog('PRODUITS STATUS', res.status);
+
+      const text = await res.text();
+      const prodData = JSON.parse(text);
+
+      addLog('PRODUITS OK', prodData);
+
+      const list = Array.isArray(prodData)
+        ? prodData
+        : prodData?.data || prodData?.produits || [];
+
+      setProduits(
+        list.map((p: any) => ({
+          id: p.id,
+          intitule: p.intitule,
+          selected: false,
+          prix_achat: '',
+          prix_vente_gros: '',
+          prix_vente_details: '',
+          cout_transport: '',
+          marge: '',
+          volume: '',
+        }))
+      );
+    })
+    .catch((err) => {
+      addLog('PRODUITS FETCH ERROR', err);
+    });
+}, []);
 
   // ===================== GET PLV =====================
 useEffect(() => {
@@ -194,261 +211,565 @@ const buildRefPrix = () => {
 
   // ===================== SUBMIT =====================
 const handleSubmit = async () => {
-  try {
-    addLog('SUBMIT START');
+  if (!idVisite) {
+    const corps = {
+      idclient: prospect,
+      idutilisateur: user.id,
+      idcategorie: 5,
+      date: new Date().toISOString().split('T')[0],
+      statut: 0,
+      type: 1,
+      idtype: 2,
+      object: null,
+    };
 
-    // 1️⃣ INSERT RAPPORT
-    const resRapport = await fetch(
-      `${BASE_URL}/rapport`,
+    const response = await fetchWithTimeout(
+      `${BASE_URL}/visite`,
       {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({
-          idvisite: idVisite,
-          description,
-          autre_plv: autrePlv,
-        }),
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify(corps),
       }
     );
 
-    const rapportText = await resRapport.text();
-    addLog('RAPPORT RAW', rapportText);
+    console.log('Status:', response.status);
 
-    let rapportData: any;
+    const text = await response.text();
+    console.log('Réponse brute:', text);
+
+    let result;
+    
+    console.log('TEXT VISITE :', text);
+
     try {
-      rapportData = JSON.parse(rapportText);
+      result = JSON.parse(text);
+      console.log('RESULTAT VISITE :', result);
     } catch {
-      addLog('RAPPORT JSON ERROR', rapportText);
-      Alert.alert('Erreur', 'Réponse rapport invalide');
-      return;
+      throw new Error('Réponse serveur invalide');
     }
 
-    if (!resRapport.ok) {
-      addLog('RAPPORT NOT OK', rapportData);
-      Alert.alert('Erreur rapport', rapportData?.message ?? 'Erreur rapport');
-      return;
+    if (!response.ok) {
+      throw new Error(result.message || 'Erreur insertion visite');
     }
 
-    // 2️⃣ INSERT PRODUIT_CLIENT (un POST par produit, champs à plat)
-    addLog('IDCLIENT VALUE', { idClient, type: typeof idClient });
+    const idVisite2 = result.id; 
+    try {
+      addLog('SUBMIT START');
 
-    const produitsSelectionnes = produits.filter(p => p.selected);
-
-    addLog('PRODUITS SELECTIONNES', produitsSelectionnes.map(p => ({ id: p.id, intitule: p.intitule })));
-
-    let produitClientData: any[] = [];
-
-    for (const p of produitsSelectionnes) {
-      const payload = { idclient: Number(idClient), idproduit: Number(p.id) };
-      addLog(`PRODUIT CLIENT POST ${p.id}`, payload);
-
-      const res = await fetch(
-        `${BASE_URL}/produitClient`,
+      // 1️⃣ INSERT RAPPORT
+      const resRapport = await fetch(
+        `${BASE_URL}/rapport`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            idvisite: idVisite2,
+            description,
+            autre_plv: autrePlv,
+          }),
         }
       );
 
-      const text = await res.text();
-      addLog(`PRODUIT CLIENT RAW ${p.id}`, text);
+      const rapportText = await resRapport.text();
+      addLog('RAPPORT RAW', rapportText);
 
-      if (!res.ok) {
-        Alert.alert('Erreur produit_client', text);
-        return;
-      }
-
+      let rapportData: any;
       try {
-        const json = JSON.parse(text);
-        // Le backend retourne soit l'objet directement, soit dans .data, soit un tableau
-        const row = Array.isArray(json) ? json[0] : (json?.data ?? json);
-        addLog(`PRODUIT CLIENT PARSED ${p.id}`, row);
-        if (row?.id) {
-          produitClientData.push({ ...row, _idproduit_origine: Number(p.id) });
-        }
+        rapportData = JSON.parse(rapportText);
       } catch {
-        addLog(`PRODUIT CLIENT JSON ERROR ${p.id}`, text);
-      }
-    }
-
-    addLog('PRODUIT CLIENT DATA FINAL', produitClientData);
-
-    // 3️⃣ INSERT REF PRIX PRODUIT
-    const refPrix = produits
-      .filter(p => p.selected)
-      .map(p => {
-        const match = produitClientData.find(
-          (pc: any) =>
-            Number(pc._idproduit_origine) === Number(p.id) ||
-            Number(pc.idproduit) === Number(p.id)
-        );
-        addLog(`MATCH PRODUIT ${p.id}`, match ?? 'AUCUN MATCH');
-        return {
-          idvisite: Number(idVisite),
-          idproduit: match?.id ?? null,
-          prix_achat: p.prix_achat || null,
-          prix_vente_gros: p.prix_vente_gros || null,
-          prix_vente_details: p.prix_vente_details || null,
-          cout_transport: p.cout_transport || null,
-          marge: p.marge || null,
-          volume: p.volume || null,
-        };
-      });
-
-    addLog('REFPRIX PAYLOAD', refPrix);
-
-    if (refPrix.length > 0) {
-      const nullMatches = refPrix.filter(r => r.idproduit === null);
-      if (nullMatches.length > 0) {
-        addLog('REFPRIX NULL MATCHES', nullMatches);
-        Alert.alert('Erreur', `${nullMatches.length} produit(s) sans correspondance produit_client`);
+        addLog('RAPPORT JSON ERROR', rapportText);
+        Alert.alert('Erreur', 'Réponse rapport invalide');
         return;
       }
 
-      for (const item of refPrix) {
-        addLog('REFPRIX POST ITEM', item);
+      if (!resRapport.ok) {
+        addLog('RAPPORT NOT OK', rapportData);
+        Alert.alert('Erreur rapport', rapportData?.message ?? 'Erreur rapport');
+        return;
+      }
 
-        const resRefPrix = await fetch(
-          `${BASE_URL}/refPrixProduit`,
+      // 2️⃣ INSERT PRODUIT_CLIENT (un POST par produit, champs à plat)
+      addLog('IDCLIENT VALUE', { idClient, type: typeof idClient });
+
+      const produitsSelectionnes = produits.filter(p => p.selected);
+
+      addLog('PRODUITS SELECTIONNES', produitsSelectionnes.map(p => ({ id: p.id, intitule: p.intitule })));
+
+      let produitClientData: any[] = [];
+
+      for (const p of produitsSelectionnes) {
+        const payload = { idclient: Number(idClient), idproduit: Number(p.id) };
+        addLog(`PRODUIT CLIENT POST ${p.id}`, payload);
+
+        const res = await fetch(
+          `${BASE_URL}/produitClient`,
           {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(item),
+            body: JSON.stringify(payload),
           }
         );
 
-        const refPrixText = await resRefPrix.text();
-        addLog('REFPRIX RAW', refPrixText);
+        const text = await res.text();
+        addLog(`PRODUIT CLIENT RAW ${p.id}`, text);
 
-        if (!resRefPrix.ok) {
-          let refPrixData: any;
-          try {
-            refPrixData = JSON.parse(refPrixText);
-          } catch {
-            Alert.alert('Erreur ref_prix', refPrixText);
+        if (!res.ok) {
+          Alert.alert('Erreur produit_client', text);
+          return;
+        }
+
+        try {
+          const json = JSON.parse(text);
+          // Le backend retourne soit l'objet directement, soit dans .data, soit un tableau
+          const row = Array.isArray(json) ? json[0] : (json?.data ?? json);
+          addLog(`PRODUIT CLIENT PARSED ${p.id}`, row);
+          if (row?.id) {
+            produitClientData.push({ ...row, _idproduit_origine: Number(p.id) });
+          }
+        } catch {
+          addLog(`PRODUIT CLIENT JSON ERROR ${p.id}`, text);
+        }
+      }
+
+      addLog('PRODUIT CLIENT DATA FINAL', produitClientData);
+
+      // 3️⃣ INSERT REF PRIX PRODUIT
+      const refPrix = produits
+        .filter(p => p.selected)
+        .map(p => {
+          const match = produitClientData.find(
+            (pc: any) =>
+              Number(pc._idproduit_origine) === Number(p.id) ||
+              Number(pc.idproduit) === Number(p.id)
+          );
+          addLog(`MATCH PRODUIT ${p.id}`, match ?? 'AUCUN MATCH');
+          return {
+            idvisite: Number(idVisite2),
+            idproduit: match?.id ?? null,
+            prix_achat: p.prix_achat || null,
+            prix_vente_gros: p.prix_vente_gros || null,
+            prix_vente_details: p.prix_vente_details || null,
+            cout_transport: p.cout_transport || null,
+            marge: p.marge || null,
+            volume: p.volume || null,
+          };
+        });
+
+      addLog('REFPRIX PAYLOAD', refPrix);
+
+      if (refPrix.length > 0) {
+        const nullMatches = refPrix.filter(r => r.idproduit === null);
+        if (nullMatches.length > 0) {
+          addLog('REFPRIX NULL MATCHES', nullMatches);
+          Alert.alert('Erreur', `${nullMatches.length} produit(s) sans correspondance produit_client`);
+          return;
+        }
+
+        for (const item of refPrix) {
+          addLog('REFPRIX POST ITEM', item);
+
+          const resRefPrix = await fetch(
+            `${BASE_URL}/refPrixProduit`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify(item),
+            }
+          );
+
+          const refPrixText = await resRefPrix.text();
+          addLog('REFPRIX RAW', refPrixText);
+
+          if (!resRefPrix.ok) {
+            let refPrixData: any;
+            try {
+              refPrixData = JSON.parse(refPrixText);
+            } catch {
+              Alert.alert('Erreur ref_prix', refPrixText);
+              return;
+            }
+            Alert.alert('Erreur ref_prix', JSON.stringify(refPrixData));
             return;
           }
-          Alert.alert('Erreur ref_prix', JSON.stringify(refPrixData));
+        }
+      }
+
+      // 4️⃣ AUTRES PRODUITS (un POST par produit, champs à plat)
+      for (const ap of autresProduits) {
+        const { id: _localId, ...apFields } = ap; // exclure l'id temporaire frontend
+        const autrePayload = {
+          idvisite: Number(idVisite2),
+          nom: apFields.nom,
+          prix_achat: apFields.prix_achat || null,
+          prix_vente_gros: apFields.prix_vente_gros || null,
+          prix_vente_details: apFields.prix_vente_details || null,
+          cout_transport: apFields.cout_transport || null,
+          marge: apFields.marge || null,
+          volume: apFields.volume || null,
+        };
+        addLog('AUTRE PRODUIT POST ITEM', autrePayload);
+
+        const resAutre = await fetch(
+          `${BASE_URL}/autreProduit`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(autrePayload),
+          }
+        );
+
+        const autreText = await resAutre.text();
+        addLog('AUTRE PRODUIT RAW', autreText);
+
+        if (!resAutre.ok) {
+          let autreData: any;
+          try {
+            autreData = JSON.parse(autreText);
+          } catch {
+            Alert.alert('Erreur autres produits', autreText);
+            return;
+          }
+          Alert.alert('Erreur autres produits', JSON.stringify(autreData));
           return;
         }
       }
-    }
 
-    // 4️⃣ AUTRES PRODUITS (un POST par produit, champs à plat)
-    for (const ap of autresProduits) {
-      const { id: _localId, ...apFields } = ap; // exclure l'id temporaire frontend
-      const autrePayload = {
-        idvisite: Number(idVisite),
-        nom: apFields.nom,
-        prix_achat: apFields.prix_achat || null,
-        prix_vente_gros: apFields.prix_vente_gros || null,
-        prix_vente_details: apFields.prix_vente_details || null,
-        cout_transport: apFields.cout_transport || null,
-        marge: apFields.marge || null,
-        volume: apFields.volume || null,
-      };
-      addLog('AUTRE PRODUIT POST ITEM', autrePayload);
+      // 5️⃣ PLV (un POST par PLV sélectionnée)
+      for (const idplv of selectedPlvs) {
+        const plvPayload = { idvisite: Number(idVisite2), idplv };
+        addLog('PLV POST ITEM', plvPayload);
 
-      const resAutre = await fetch(
-        `${BASE_URL}/autreProduit`,
+        const resPlv = await fetch(
+          `${BASE_URL}/recensementPlv`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(plvPayload),
+          }
+        );
+
+        const plvText = await resPlv.text();
+        addLog('PLV RAW', plvText);
+
+        if (!resPlv.ok) {
+          let plvData: any;
+          try {
+            plvData = JSON.parse(plvText);
+          } catch {
+            Alert.alert('Erreur PLV', plvText);
+            return;
+          }
+          Alert.alert('Erreur PLV', JSON.stringify(plvData));
+          return;
+        }
+      }
+
+      // 6️⃣ UPDATE STATUT VISITE
+      const resUpdate = await fetch(
+        `${BASE_URL}/visite/${idVisite2}`,
         {
-          method: 'POST',
+          method: 'PUT',
           headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(autrePayload),
+          body: JSON.stringify({ statut: 1 }),
         }
       );
 
-      const autreText = await resAutre.text();
-      addLog('AUTRE PRODUIT RAW', autreText);
+      const updateText = await resUpdate.text();
+      addLog('VISITE UPDATE RAW', updateText);
 
-      if (!resAutre.ok) {
-        let autreData: any;
-        try {
-          autreData = JSON.parse(autreText);
-        } catch {
-          Alert.alert('Erreur autres produits', autreText);
-          return;
-        }
-        Alert.alert('Erreur autres produits', JSON.stringify(autreData));
-        return;
+      if (!resUpdate.ok) {
+        addLog('VISITE UPDATE FAILED', updateText);
+        // Non bloquant, on continue
       }
+
+      // 7️⃣ RESET
+      setProduits(prev => prev.map(p => ({
+        ...p,
+        selected: false,
+        prix_achat: '',
+        prix_vente_gros: '',
+        prix_vente_details: '',
+        cout_transport: '',
+        marge: '',
+        volume: '',
+      })));
+      setAutresProduits([]);
+      setSelectedPlvs([]);
+      setDescription('');
+      setAutrePlv('');
+      setErrorMessage('');
+
+      Alert.alert('Succès', 'Rapport complet enregistré ✅');
+      router.replace('/planning');
+
+    }catch (err: any) {
+      addLog('SUBMIT ERROR', err);
+      const msg = err?.message || JSON.stringify(err) || 'Erreur inconnue';
+      setErrorMessage(msg);
+      Alert.alert('Erreur', msg);
     }
-
-    // 5️⃣ PLV (un POST par PLV sélectionnée)
-    for (const idplv of selectedPlvs) {
-      const plvPayload = { idvisite: Number(idVisite), idplv };
-      addLog('PLV POST ITEM', plvPayload);
-
-      const resPlv = await fetch(
-        `${BASE_URL}/recensementPlv`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify(plvPayload),
-        }
-      );
-
-      const plvText = await resPlv.text();
-      addLog('PLV RAW', plvText);
-
-      if (!resPlv.ok) {
-        let plvData: any;
-        try {
-          plvData = JSON.parse(plvText);
-        } catch {
-          Alert.alert('Erreur PLV', plvText);
-          return;
-        }
-        Alert.alert('Erreur PLV', JSON.stringify(plvData));
-        return;
-      }
-    }
-
-    // 6️⃣ UPDATE STATUT VISITE
-    const resUpdate = await fetch(
-      `${BASE_URL}/visite/${idVisite}`,
-      {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ statut: 1 }),
-      }
-    );
-
-    const updateText = await resUpdate.text();
-    addLog('VISITE UPDATE RAW', updateText);
-
-    if (!resUpdate.ok) {
-      addLog('VISITE UPDATE FAILED', updateText);
-      // Non bloquant, on continue
-    }
-
-    // 7️⃣ RESET
-    setProduits(prev => prev.map(p => ({
-      ...p,
-      selected: false,
-      prix_achat: '',
-      prix_vente_gros: '',
-      prix_vente_details: '',
-      cout_transport: '',
-      marge: '',
-      volume: '',
-    })));
-    setAutresProduits([]);
-    setSelectedPlvs([]);
-    setDescription('');
-    setAutrePlv('');
-    setErrorMessage('');
-
-    Alert.alert('Succès', 'Rapport complet enregistré ✅');
-    router.replace('/planning');
-
-  } catch (err: any) {
-    addLog('SUBMIT ERROR', err);
-    const msg = err?.message || JSON.stringify(err) || 'Erreur inconnue';
-    setErrorMessage(msg);
-    Alert.alert('Erreur', msg);
   }
+  else{
+    try {
+      addLog('SUBMIT START');
+
+      // 1️⃣ INSERT RAPPORT
+      const resRapport = await fetch(
+        `${BASE_URL}/rapport`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({
+            idvisite: idVisite,
+            description,
+            autre_plv: autrePlv,
+          }),
+        }
+      );
+
+      const rapportText = await resRapport.text();
+      addLog('RAPPORT RAW', rapportText);
+
+      let rapportData: any;
+      try {
+        rapportData = JSON.parse(rapportText);
+      } catch {
+        addLog('RAPPORT JSON ERROR', rapportText);
+        Alert.alert('Erreur', 'Réponse rapport invalide');
+        return;
+      }
+
+      if (!resRapport.ok) {
+        addLog('RAPPORT NOT OK', rapportData);
+        Alert.alert('Erreur rapport', rapportData?.message ?? 'Erreur rapport');
+        return;
+      }
+
+      // 2️⃣ INSERT PRODUIT_CLIENT (un POST par produit, champs à plat)
+      addLog('IDCLIENT VALUE', { idClient, type: typeof idClient });
+
+      const produitsSelectionnes = produits.filter(p => p.selected);
+
+      addLog('PRODUITS SELECTIONNES', produitsSelectionnes.map(p => ({ id: p.id, intitule: p.intitule })));
+
+      let produitClientData: any[] = [];
+
+      for (const p of produitsSelectionnes) {
+        const payload = { idclient: Number(idClient), idproduit: Number(p.id) };
+        addLog(`PRODUIT CLIENT POST ${p.id}`, payload);
+
+        const res = await fetch(
+          `${BASE_URL}/produitClient`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(payload),
+          }
+        );
+
+        const text = await res.text();
+        addLog(`PRODUIT CLIENT RAW ${p.id}`, text);
+
+        if (!res.ok) {
+          Alert.alert('Erreur produit_client', text);
+          return;
+        }
+
+        try {
+          const json = JSON.parse(text);
+          // Le backend retourne soit l'objet directement, soit dans .data, soit un tableau
+          const row = Array.isArray(json) ? json[0] : (json?.data ?? json);
+          addLog(`PRODUIT CLIENT PARSED ${p.id}`, row);
+          if (row?.id) {
+            produitClientData.push({ ...row, _idproduit_origine: Number(p.id) });
+          }
+        } catch {
+          addLog(`PRODUIT CLIENT JSON ERROR ${p.id}`, text);
+        }
+      }
+
+      addLog('PRODUIT CLIENT DATA FINAL', produitClientData);
+
+      // 3️⃣ INSERT REF PRIX PRODUIT
+      const refPrix = produits
+        .filter(p => p.selected)
+        .map(p => {
+          const match = produitClientData.find(
+            (pc: any) =>
+              Number(pc._idproduit_origine) === Number(p.id) ||
+              Number(pc.idproduit) === Number(p.id)
+          );
+          addLog(`MATCH PRODUIT ${p.id}`, match ?? 'AUCUN MATCH');
+          return {
+            idvisite: Number(idVisite),
+            idproduit: match?.id ?? null,
+            prix_achat: p.prix_achat || null,
+            prix_vente_gros: p.prix_vente_gros || null,
+            prix_vente_details: p.prix_vente_details || null,
+            cout_transport: p.cout_transport || null,
+            marge: p.marge || null,
+            volume: p.volume || null,
+          };
+        });
+
+      addLog('REFPRIX PAYLOAD', refPrix);
+
+      if (refPrix.length > 0) {
+        const nullMatches = refPrix.filter(r => r.idproduit === null);
+        if (nullMatches.length > 0) {
+          addLog('REFPRIX NULL MATCHES', nullMatches);
+          Alert.alert('Erreur', `${nullMatches.length} produit(s) sans correspondance produit_client`);
+          return;
+        }
+
+        for (const item of refPrix) {
+          addLog('REFPRIX POST ITEM', item);
+
+          const resRefPrix = await fetch(
+            `${BASE_URL}/refPrixProduit`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+              body: JSON.stringify(item),
+            }
+          );
+
+          const refPrixText = await resRefPrix.text();
+          addLog('REFPRIX RAW', refPrixText);
+
+          if (!resRefPrix.ok) {
+            let refPrixData: any;
+            try {
+              refPrixData = JSON.parse(refPrixText);
+            } catch {
+              Alert.alert('Erreur ref_prix', refPrixText);
+              return;
+            }
+            Alert.alert('Erreur ref_prix', JSON.stringify(refPrixData));
+            return;
+          }
+        }
+      }
+
+      // 4️⃣ AUTRES PRODUITS (un POST par produit, champs à plat)
+      for (const ap of autresProduits) {
+        const { id: _localId, ...apFields } = ap; // exclure l'id temporaire frontend
+        const autrePayload = {
+          idvisite: Number(idVisite),
+          nom: apFields.nom,
+          prix_achat: apFields.prix_achat || null,
+          prix_vente_gros: apFields.prix_vente_gros || null,
+          prix_vente_details: apFields.prix_vente_details || null,
+          cout_transport: apFields.cout_transport || null,
+          marge: apFields.marge || null,
+          volume: apFields.volume || null,
+        };
+        addLog('AUTRE PRODUIT POST ITEM', autrePayload);
+
+        const resAutre = await fetch(
+          `${BASE_URL}/autreProduit`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(autrePayload),
+          }
+        );
+
+        const autreText = await resAutre.text();
+        addLog('AUTRE PRODUIT RAW', autreText);
+
+        if (!resAutre.ok) {
+          let autreData: any;
+          try {
+            autreData = JSON.parse(autreText);
+          } catch {
+            Alert.alert('Erreur autres produits', autreText);
+            return;
+          }
+          Alert.alert('Erreur autres produits', JSON.stringify(autreData));
+          return;
+        }
+      }
+
+      // 5️⃣ PLV (un POST par PLV sélectionnée)
+      for (const idplv of selectedPlvs) {
+        const plvPayload = { idvisite: Number(idVisite), idplv };
+        addLog('PLV POST ITEM', plvPayload);
+
+        const resPlv = await fetch(
+          `${BASE_URL}/recensementPlv`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(plvPayload),
+          }
+        );
+
+        const plvText = await resPlv.text();
+        addLog('PLV RAW', plvText);
+
+        if (!resPlv.ok) {
+          let plvData: any;
+          try {
+            plvData = JSON.parse(plvText);
+          } catch {
+            Alert.alert('Erreur PLV', plvText);
+            return;
+          }
+          Alert.alert('Erreur PLV', JSON.stringify(plvData));
+          return;
+        }
+      }
+
+      // 6️⃣ UPDATE STATUT VISITE
+      const resUpdate = await fetch(
+        `${BASE_URL}/visite/${idVisite}`,
+        {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify({ statut: 1 }),
+        }
+      );
+
+      const updateText = await resUpdate.text();
+      addLog('VISITE UPDATE RAW', updateText);
+
+      if (!resUpdate.ok) {
+        addLog('VISITE UPDATE FAILED', updateText);
+        // Non bloquant, on continue
+      }
+
+      // 7️⃣ RESET
+      setProduits(prev => prev.map(p => ({
+        ...p,
+        selected: false,
+        prix_achat: '',
+        prix_vente_gros: '',
+        prix_vente_details: '',
+        cout_transport: '',
+        marge: '',
+        volume: '',
+      })));
+      setAutresProduits([]);
+      setSelectedPlvs([]);
+      setDescription('');
+      setAutrePlv('');
+      setErrorMessage('');
+
+      Alert.alert('Succès', 'Rapport complet enregistré ✅');
+      router.replace('/planning');
+
+    }catch (err: any) {
+      addLog('SUBMIT ERROR', err);
+      const msg = err?.message || JSON.stringify(err) || 'Erreur inconnue';
+      setErrorMessage(msg);
+      Alert.alert('Erreur', msg);
+    }
+  }
+  
 };
 
   // ===================== UI =====================
@@ -468,44 +789,52 @@ const handleSubmit = async () => {
     >
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={{
-          paddingBottom: 150,
-        }}
+        contentContainerStyle={styles.container}
       >
 
         {/* <Text style={styles.title}>Rapport Retail</Text> */}
         {/* <Text>Id visite: {idVisite}</Text> */}
-        <View style={styles.clientCard}>
-        <Text style={styles.clientTitle}>👤 Informations client</Text>
+        
+        {visite?.client ? (
+          <View style={styles.clientCard}>
+            <Text style={styles.clientTitle}>👤 Informations client</Text>
+            <Text style={styles.clientText}>
+                Nom: {visite?.client?.nom || '—'}
+            </Text>
 
-        <Text style={styles.clientText}>
-            Nom: {visite?.client?.nom || '—'}
-        </Text>
+            <Text style={styles.clientText}>
+                Zone: {visite?.client?.zone || '—'}
+            </Text>
 
-        <Text style={styles.clientText}>
-            Zone: {visite?.client?.zone || '—'}
-        </Text>
+            <Text style={styles.clientText}>
+                Quartier: {visite?.client?.quartier || '—'}
+            </Text>
 
-        <Text style={styles.clientText}>
-            Quartier: {visite?.client?.quartier || '—'}
-        </Text>
+            <Text style={styles.clientText}>
+                Catégorie: {visite?.client?.categorie_client?.intitule || '—'}
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.clientCard}>
+            <Text style={styles.clientTitle}>👤 Informations client</Text>
+            <Text style={styles.clientText}>
+              Nom: {client?.nom || '—'}
+            </Text>
 
-        <Text style={styles.clientText}>
-            Catégorie: {visite?.client?.categorie_client?.intitule || '—'}
-        </Text>
+            <Text style={styles.clientText}>
+                Zone: {client?.zone || '—'}
+            </Text>
 
-        {/* <Text style={styles.clientText}>
-            Agence: {visite?.client?.agence?.intitule || '—'}
-        </Text> */}
+            <Text style={styles.clientText}>
+                Quartier: {client?.quartier || '—'}
+            </Text>
 
-        {/* <Text style={styles.clientText}>
-            Coordonnées: {visite?.client?.latitude}, {visite?.client?.longitude}
-        </Text>
-
-        <Text style={styles.clientText}>
-            QR Code: {visite?.client?.status_qrcode ? 'Activé' : 'Désactivé'}
-        </Text> */}
-        </View>
+            <Text style={styles.clientText}>
+                Catégorie: {client?.categorie_client?.intitule || '—'}
+            </Text>
+          </View>
+        )}
+        
 
         {/* PRODUITS */}
         <Text style={styles.section}>Produits</Text>
@@ -599,32 +928,32 @@ const handleSubmit = async () => {
               onChangeText={v => updateAutre(i, 'nom', v)}
             />
 
-            <TextInput placeholder="Prix achat" style={styles.input}
+            <TextInput placeholder="Prix achat" style={styles.input} keyboardType="numeric"
               value={p.prix_achat}
               onChangeText={v => updateAutre(i, 'prix_achat', v)}
             />
 
-            <TextInput placeholder="Prix vente gros" style={styles.input}
+            <TextInput placeholder="Prix vente gros" style={styles.input} keyboardType="numeric"
               value={p.prix_vente_gros}
               onChangeText={v => updateAutre(i, 'prix_vente_gros', v)}
             />
 
-            <TextInput placeholder="Prix vente détail" style={styles.input}
+            <TextInput placeholder="Prix vente détail" style={styles.input} keyboardType="numeric"
               value={p.prix_vente_details}
               onChangeText={v => updateAutre(i, 'prix_vente_details', v)}
             />
 
-            <TextInput placeholder="Transport" style={styles.input}
+            <TextInput placeholder="Transport" style={styles.input} keyboardType="numeric"
               value={p.cout_transport}
               onChangeText={v => updateAutre(i, 'cout_transport', v)}
             />
 
-            <TextInput placeholder="Marge" style={styles.input}
+            <TextInput placeholder="Marge" style={styles.input} keyboardType="numeric"
               value={p.marge}
               onChangeText={v => updateAutre(i, 'marge', v)}
             />
 
-            <TextInput placeholder="Quantité" style={styles.input}
+            <TextInput placeholder="Quantité" style={styles.input} keyboardType="numeric"
               value={p.volume}
               onChangeText={v => updateAutre(i, 'volume', v)}
             />
@@ -666,8 +995,15 @@ const handleSubmit = async () => {
 
         {/* SUBMIT */}
         <TouchableOpacity style={styles.submit} onPress={handleSubmit}>
-          <Text style={{ color: '#fff', fontWeight: 'bold' }}>
-            ENREGISTRER
+          <Text
+            style={{
+              color: C.white,
+              fontSize: 16,
+              fontWeight: '700',
+              letterSpacing: 0.5,
+            }}
+          >
+            Enregistrer rapport
           </Text>
         </TouchableOpacity>
         {/* DEBUG */}
@@ -687,90 +1023,166 @@ const handleSubmit = async () => {
 
 // ===================== STYLE =====================
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 15, backgroundColor: '#f5f5f5', },
-  title: { fontSize: 22, fontWeight: 'bold' },
-  safe: { flex: 1, backgroundColor: C.lightBg },
-  section: { marginTop: 20, fontWeight: 'bold' },
+  safe: {
+    flex: 1,
+    backgroundColor: C.lightBg,
+  },
 
-debugBox: {
-  marginTop: 20,
-  padding: 10,
-  backgroundColor: '#1e1e1e',
-  borderRadius: 8,
-},
-debugTitle: {
-  color: '#00e676',
-  fontWeight: 'bold',
-  marginBottom: 4,
-  fontSize: 12,
-},
-debugText: {
-  color: '#ccc',
-  fontSize: 10,
-  fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-},
+  container: {
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+  },
+
+  section: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: C.dark,
+    marginTop: 28,
+    marginBottom: 12,
+  },
 
   card: {
-    backgroundColor: '#fff',
-    padding: 10,
-    marginTop: 10,
-    borderRadius: 10,
-  },
+    backgroundColor: C.white,
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: C.border,
 
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+
+    elevation: 2,
+  },
 
   productHeader: {
-  paddingVertical: 5,
-},
-
-  input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    padding: 10,
-    marginTop: 8,
-    borderRadius: 8,
-  },
-
-  addBtn: {
-    backgroundColor: '#3498db',
-    padding: 10,
-    marginTop: 10,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-
-  plv: {
-    padding: 8,
-    fontSize: 15,
-  },
-
-  submit: {
-    backgroundColor: '#e74c3c',
-    padding: 15,
-    marginTop: 25,
-    borderRadius: 10,
-    alignItems: 'center',
+    paddingVertical: 4,
+    marginBottom: 8,
   },
 
   name: {
-    fontWeight: 'bold',
+    fontSize: 16,
+    fontWeight: '700',
+    color: C.dark,
   },
+
+  input: {
+    backgroundColor: C.inputBg,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 10,
+    fontSize: 15,
+    color: C.dark,
+  },
+
+  addBtn: {
+    backgroundColor: C.blue2,
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 12,
+
+    shadowColor: C.blue2,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+
+    elevation: 3,
+  },
+
+  plv: {
+    backgroundColor: C.white,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: C.border,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 10,
+    fontSize: 15,
+    color: C.dark,
+  },
+
+  submit: {
+    backgroundColor: C.blue,
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: 'center',
+    marginTop: 32,
+    marginBottom: 24,
+
+    shadowColor: C.blue,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+
+    elevation: 4,
+  },
+
   clientCard: {
-  backgroundColor: '#fff',
-  padding: 15,
-  borderRadius: 12,
-  marginTop: 10,
-  elevation: 3,
-},
+    backgroundColor: C.white,
+    borderRadius: 18,
+    padding: 18,
+    marginTop: 12,
+    marginBottom: 8,
+    borderLeftWidth: 5,
+    borderLeftColor: C.primary,
 
-clientTitle: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  marginBottom: 10,
-},
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
 
-clientText: {
-  fontSize: 14,
-  marginTop: 4,
-  color: '#333',
-},
+    elevation: 2,
+  },
+
+  clientTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: C.dark,
+    marginBottom: 14,
+  },
+
+  clientText: {
+    fontSize: 15,
+    color: C.grey,
+    marginBottom: 8,
+    lineHeight: 22,
+  },
+
+  debugBox: {
+    marginTop: 20,
+    padding: 14,
+    backgroundColor: '#1F2937',
+    borderRadius: 12,
+  },
+
+  debugTitle: {
+    color: '#4ADE80',
+    fontWeight: '700',
+    marginBottom: 8,
+    fontSize: 12,
+  },
+
+  debugText: {
+    color: '#D1D5DB',
+    fontSize: 11,
+    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
+  },
 });

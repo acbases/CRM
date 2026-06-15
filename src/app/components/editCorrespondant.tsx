@@ -10,6 +10,17 @@ import {
   Alert,
 } from 'react-native';
 import { BASE_URL } from '@/config/api';
+const C = {
+  primary: '#EF2D24',
+  white: '#FFFFFF',
+  grey: '#88898E',
+  lightBg: '#F5F5F7',
+  dark: '#1A1A1A',
+  border: '#E5E7EB',
+  inputBg: '#F9FAFB',
+  blue:'#126bc4',
+  green:'#328332',
+};
 
 type Props = {
   visible: boolean;
@@ -179,7 +190,7 @@ const styles = StyleSheet.create({
   },
 
   saveBtn: {
-    backgroundColor: '#d71f27',
+    backgroundColor: C.blue,
     padding: 14,
     borderRadius: 10,
     alignItems: 'center',
