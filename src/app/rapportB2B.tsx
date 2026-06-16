@@ -1,8 +1,13 @@
+import PageHeader from '@/components/PageHeader';
+import { useAuth } from '@/context/AuthContext';
+import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
+import { Ionicons } from '@expo/vector-icons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   Alert,
   Image,
   Modal,
@@ -14,15 +19,10 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import PageHeader from '@/components/PageHeader';
-import NewCorrespondant from './components/newCorrespondant';
 import { BASE_URL } from '../config/api';
-import { useAuth } from '@/context/AuthContext';
-import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
+import NewCorrespondant from './components/newCorrespondant';
 
 const C = {
   primary: '#EF2D24',
@@ -36,6 +36,27 @@ const C = {
   blue2:'#509597',
   green:'#328332',
 };
+
+async function parseJsonSafe<T>(response: Response): Promise<T | null> {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text) as T;
+  } catch (error) {
+    console.warn('parseJsonSafe failed', response.url, text, error);
+    return null;
+  }
+}
+
+async function parseJsonOrRaw(response: Response): Promise<any> {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { raw: text };
+  }
+}
 
 interface Correspondant {
   id: number;
@@ -99,45 +120,81 @@ export default function RapportB2BScreen() {
   const [client, setClient]= useState<any | null>(null);
   const { user } = useAuth();
 
-  const { body } = useLocalSearchParams();
-    const v= body
-    ? JSON.parse(body as string) as {
-        idClient:number;
-        idutilisateur: number;
-        idcategorie: number;
-        date: string;
-        statut: number;
-        type: number;
-        idtype: number;
-        object: string;
+  // const { body } = useLocalSearchParams();
+  //   const voky= body
+  //   ? JSON.parse(body as string) as {
+  //       idClient:number;
+  //       idutilisateur: number;
+  //       idcategorie: number;
+  //       date: string;
+  //       statut: number;
+  //       type: number;
+  //       idtype: number;
+  //       object: string;
+  //     }
+  //   : null;
+
+  useEffect(() => {
+    if (!idVisite) return;
+
+    const loadVisite = async () => {
+      try {
+        const response = await fetch(`${BASE_URL}/visite/${idVisite}`);
+        const json = await parseJsonSafe<any>(response);
+        if (json) {
+          setVisite(json);
+          return;
+        }
+        Alert.alert('Erreur', 'Réponse serveur invalide pour la visite');
+      } catch (err: any) {
+        Alert.alert('Erreur', err.message ?? 'Impossible de charger la visite');
+      } finally {
+        setLoading(false);
       }
-    : null;
+    };
 
-  useEffect(() => {
-    fetch(`${BASE_URL}/visite/${idVisite}`)
-      .then((res) => res.json())
-      .then((json) => setVisite(json))
-      .catch((err) => Alert.alert('Erreur', err.message))
-      .finally(() => setLoading(false));
-  }, []);
+    loadVisite();
+  }, [idVisite]);
 
-  useEffect(() => {
-    fetch(`${BASE_URL}/client/${prospect}`)
-      .then((res) => res.json())
-      .then((json) => setClient(json))
-      .catch((err) => Alert.alert('Erreur', err.message))
-      .finally(() => setLoading(false));
-  }, []);
+useEffect(() => {
+  if (!prospect) return;
+
+  const loadClient = async () => {
+    try {
+      const response = await fetch(`${BASE_URL}/client/${prospect}`);
+      const json = await parseJsonSafe<any>(response);
+      if (json) {
+        setClient(json);
+        return;
+      }
+      Alert.alert('Erreur', 'Réponse serveur invalide pour le client');
+    } catch (err: any) {
+      Alert.alert('Erreur', err.message ?? 'Impossible de charger le client');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  loadClient();
+}, [prospect]);
+  
 
   useEffect(() => {
     const idClient = visite?.client?.id ?? prospect;
 
     if (!idClient) return;
 
-    fetch(`${BASE_URL}/correspondantClientByIdClient/${idClient}`)
-      .then((res) => res.json())
-      .then((json) => setCorrespondants(Array.isArray(json) ? json : []))
-      .catch(() => {});
+    const loadCorrespondants = async () => {
+      try {
+        const response = await fetch(`${BASE_URL}/correspondantClientByIdClient/${idClient}`);
+        const json = await parseJsonSafe<any>(response);
+        setCorrespondants(Array.isArray(json) ? json : []);
+      } catch {
+        setCorrespondants([]);
+      }
+    };
+
+    loadCorrespondants();
   }, [visite, prospect]);
 
   const pickImage = () => {
@@ -221,19 +278,8 @@ export default function RapportB2BScreen() {
         }
       );
 
-      console.log('Status:', response.status);
-
-      const text = await response.text();
-      console.log('Réponse brute:', text);
-
-      let result;
-      
-      console.log('TEXT VISITE :', text);
-
-      try {
-        result = JSON.parse(text);
-        console.log('RESULTAT VISITE :', result);
-      } catch {
+      const result = await parseJsonSafe<any>(response);
+      if (!result) {
         throw new Error('Réponse serveur invalide');
       }
 
@@ -266,16 +312,14 @@ export default function RapportB2BScreen() {
           { method: 'POST', body: formData, headers: { Accept: 'application/json' } }
         );
 
-        const text = await response.text();
-        let data: any;
-        try { data = JSON.parse(text); } catch { data = { raw: text }; }
+        const data = await parseJsonOrRaw(response);
 
         if (!response.ok) {
-          Alert.alert('Erreur', JSON.stringify(data));
+          Alert.alert('Erreur', typeof data === 'object' ? JSON.stringify(data) : String(data));
           return;
         }
 
-        await fetch(`${BASE_URL}/visite/${idVisite}`, {
+        await fetch(`${BASE_URL}/visite/${idVisite2}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
           body: JSON.stringify({ statut: 1 }),
@@ -319,12 +363,10 @@ export default function RapportB2BScreen() {
         { method: 'POST', body: formData, headers: { Accept: 'application/json' } }
       );
 
-      const text = await response.text();
-      let data: any;
-      try { data = JSON.parse(text); } catch { data = { raw: text }; }
+      const data = await parseJsonOrRaw(response);
 
       if (!response.ok) {
-        Alert.alert('Erreur', JSON.stringify(data));
+        Alert.alert('Erreur', typeof data === 'object' ? JSON.stringify(data) : String(data));
         return;
       }
 
@@ -587,7 +629,7 @@ export default function RapportB2BScreen() {
               `${BASE_URL}/correspondantClientByIdClient/${idClient}`
             );
 
-            const json = await res.json();
+            const json = await parseJsonSafe<any>(res);
             setCorrespondants(Array.isArray(json) ? json : []);
           } catch (e) {
             setCorrespondants([]);

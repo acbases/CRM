@@ -28,7 +28,7 @@ export default function ResultRetail() {
   const [rapport, setRapport] = useState<any>(null);
   const [produits, setProduits] = useState<any>(null);
   const [plv, setPlv] = useState<any>(null);
-  const [autres, setAutres] = useState<any>(null);
+  const [autres, setAutres] = useState<any[]>([]);
   const [visiste, setVisite] = useState<any>(null);
 
   useEffect(() => {
@@ -64,10 +64,17 @@ export default function ResultRetail() {
       const plvJson = await responsePlv.json();
       const autresJson = await responseAutres.json();
 
+    setAutres(
+      Array.isArray(autresJson)
+        ? autresJson
+        : autresJson?.data && Array.isArray(autresJson.data)
+          ? autresJson.data
+          : []
+    );
       setRapport(rapportJson);
       setProduits(produitsJson);
       setPlv(plvJson);
-      setAutres(autresJson);
+      
       setVisite(visiteJson);
 
       console.log('RAPPORT:', rapportJson);
@@ -226,61 +233,21 @@ export default function ResultRetail() {
           Autres Produits
         </Text>
 
-        {autres?.length > 0 ? (
-          autres?.map(
-            (item: any, index: number) => (
-              <View
-                key={index}
-                style={styles.card}
-              >
-                <Text
-                  style={styles.productTitle}
-                >
-                  {item.nom}
-                </Text>
+        {Array.isArray(autres) && autres.length > 0 ? (
+          autres.map((item, index) => (
+            <View key={index} style={styles.card}>
+              <Text style={styles.productTitle}>{item.nom}</Text>
 
-                <Text>
-                  Prix achat :
-                  {' '}
-                  {item.prix_achat} Ar
-                </Text>
-
-                <Text>
-                  Prix vente gros :
-                  {' '}
-                  {item.prix_vente_gros} Ar
-                </Text>
-
-                <Text>
-                  Prix vente détail :
-                  {' '}
-                  {item.prix_vente_details} Ar
-                </Text>
-
-                <Text>
-                  Transport :
-                  {' '}
-                  {item.cout_transport} Ar
-                </Text>
-
-                <Text>
-                  Marge :
-                  {' '}
-                  {item.marge}
-                </Text>
-
-                <Text>
-                  Volume :
-                  {' '}
-                  {item.volume} T
-                </Text>
-              </View>
-            )
-          )
+              <Text>Prix achat : {item.prix_achat} Ar</Text>
+              <Text>Prix vente gros : {item.prix_vente_gros} Ar</Text>
+              <Text>Prix vente détail : {item.prix_vente_details} Ar</Text>
+              <Text>Transport : {item.cout_transport} Ar</Text>
+              <Text>Marge : {item.marge}</Text>
+              <Text>Volume : {item.volume} T</Text>
+            </View>
+          ))
         ) : (
-          <Text style={styles.empty}>
-            Aucun autre produit
-          </Text>
+          <Text style={styles.empty}>Aucun autre produit</Text>
         )}
 
         {/* PLV */}
