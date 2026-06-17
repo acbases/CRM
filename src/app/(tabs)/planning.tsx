@@ -10,6 +10,7 @@ import {
   SafeAreaView,
   ActivityIndicator,
   Alert,
+  ScrollView,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -78,6 +79,48 @@ export default function Planning() {
   const { user } = useAuth();
 
   const today = new Date().toISOString().split('T')[0];
+
+  const getPages = (current: number, total: number) => {
+    const pages: (number | string)[] = [];
+
+    const last = total;
+
+    // si peu de pages → tout afficher
+    if (total <= 4) {
+      return Array.from({ length: total }, (_, i) => i + 1);
+    }
+
+    // cas spécial fin : afficher les 4 dernières pages
+    if (current >= total - 3) {
+      for (let i = total - 3; i <= total; i++) {
+        pages.push(i);
+      }
+      return pages;
+    }
+
+    // cas début : page 1
+    if (current === 1) {
+      pages.push(1, 2, '...', last);
+      return pages;
+    }
+
+    // cas page 2
+    if (current === 2) {
+      pages.push(1, 2, '...', last);
+      return pages;
+    }
+
+    // cas page 3
+    if (current === 3) {
+      pages.push(2, 3, '...', last);
+      return pages;
+    }
+
+    // cas général (milieu)
+    pages.push(current - 1, current, '...', last);
+
+    return pages;
+  };
 
   const loadVisites = async () => {
     if (!user?.id) return;
@@ -278,15 +321,25 @@ export default function Planning() {
                   </Text>
                 </TouchableOpacity>
 
-                <View style={styles.dotRow}>
-                  {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-                    const p = i + Math.max(1, currentPage - 2);
-                    if (p > totalPages) return null;
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.dotRow}
+                >
+                  {getPages(currentPage, totalPages).map((p, index) => {
+                    if (p === '...') {
+                      return (
+                        <View key={`dots-${index}`} style={styles.dots}>
+                          <Text style={{ color: C.grey }}>...</Text>
+                        </View>
+                      );
+                    }
+
                     return (
                       <TouchableOpacity
                         key={p}
                         style={[styles.dot, p === currentPage && styles.dotActive]}
-                        onPress={() => setCurrentPage(p)}
+                        onPress={() => setCurrentPage(Number(p))}
                       >
                         <Text style={[styles.dotTxt, p === currentPage && styles.dotTxtActive]}>
                           {p}
@@ -294,7 +347,7 @@ export default function Planning() {
                       </TouchableOpacity>
                     );
                   })}
-                </View>
+                </ScrollView>
 
                 <TouchableOpacity
                   style={[styles.pageBtn, currentPage === totalPages && styles.pageBtnOff]}
@@ -423,28 +476,50 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: C.dark },
+
   emptyDesc: { fontSize: 14, color: C.grey, textAlign: 'center', lineHeight: 20 },
-  pagination: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    paddingHorizontal: 4,
-    marginTop: 4,
-  },
+
+pagination: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingVertical: 16,
+  paddingHorizontal: 10,
+  gap: 10,
+  flexWrap: 'wrap',
+},
+
   pageBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 8,     // ↓ hauteur
+    paddingHorizontal: 10,   // ↓ largeur
     borderRadius: 10,
     backgroundColor: C.primary,
-    gap: 4,
+    gap: 3,
+    minWidth: 80,           // ↓ taille globale
+    justifyContent: 'center',
   },
-  pageBtnOff: { backgroundColor: '#E5E7EB' },
-  pageBtnTxt: { color: C.white, fontWeight: '600', fontSize: 13 },
+
+  pageBtnOff: { backgroundColor: '#E5E7EB' }, 
+
+  pageBtnTxt: { color: C.white, fontWeight: '600', fontSize: 11 },
+
   pageBtnTxtOff: { color: C.grey },
-  dotRow: { flexDirection: 'row', gap: 6, alignItems: 'center' },
+
+  dotRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    maxWidth: 180,
+  },
+
+  dots: {
+    paddingHorizontal: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
   dot: {
     width: 32,
     height: 32,
@@ -453,6 +528,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+
   dotActive: { backgroundColor: C.primary },
   dotTxt: { fontSize: 13, fontWeight: '600', color: C.grey },
   dotTxtActive: { color: C.white },
