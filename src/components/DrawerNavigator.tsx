@@ -39,7 +39,7 @@ type MenuItem = {
 
 const MENU_ITEMS: MenuItem[] = [
   { name: 'Accueil',         route: '/accueil',    icon: 'home-outline'        },
-  { name: 'Clients',         route: '/clients',    icon: 'people-outline'      },
+  { name: 'Liste clients',         route: '/clients',    icon: 'people-outline'      },
   { name: 'Nouveau Client',  route: '/newClient',  icon: 'person-add-outline'  },
   { name: 'Nouvelle Visite', route: '/newVisite',  icon: 'calendar-outline'    },
   { name: 'Planning',        route: '/planning',   icon: 'list-outline'        },
@@ -52,12 +52,12 @@ const ADMIN_ITEMS: MenuItem[] = [
 
 const PAGE_TITLES: Record<string, string> = {
   accueil:   'Accueil',
-  clients:   'Clients',
+  clients:   'Liste clients',
   newClient: 'Nouveau Client',
   newVisite: 'Nouvelle Visite',
   planning:  'Planning',
   allVisite: 'Toutes les visites',
-  resetPassword: 'Réinitialiser le mot de passe',
+  resetPassword: 'Modifier le mot de passe',
 };
 
 export default function DrawerNavigator() {
