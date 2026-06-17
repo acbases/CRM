@@ -65,7 +65,7 @@ const FILTER_DEFS: { key: FilterKey; label: string }[] = [
   { key: 'all',     label: 'Tous'       },
   { key: 'planned', label: 'Planifiées' },
   { key: 'late',    label: 'En retard'  },
-  { key: 'done',    label: 'Faites'     },
+  { key: 'done',    label: 'Effectuées'     },
 ];
 
 export default function Planning() {
@@ -107,7 +107,7 @@ export default function Planning() {
   useFocusEffect(useCallback(() => { loadVisites(); }, [user?.id]));
 
   const getStatusInfo = (v: Visite) => {
-    if (v.statut === 1) return { color: C.green,  bg: C.greenBg,  label: 'VISITE FAITE' };
+    if (v.statut === 1) return { color: C.green,  bg: C.greenBg,  label: 'EFFECTUÉE' };
     if (v.date < today)  return { color: C.red,    bg: C.redBg,    label: 'EN RETARD'    };
     return                      { color: C.orange, bg: C.orangeBg, label: 'PLANIFIÉES'    };
   };

@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Image, ActivityIndicator, TouchableOpacity,Modal } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { BASE_URL } from '../config/api';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import PageHeader from '@/components/PageHeader';
+import { Ionicons } from '@expo/vector-icons';
 
 const C = {
   primary: '#EF2D24',
@@ -130,6 +131,8 @@ export default function ResultB2B() {
   const [rapport, setRapport] = useState<Rapport | null>(null);
   const [visite, setVisite] = useState<Visite | null>(null);
   const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<any>(null);
+  const [photoVisible, setPhotoVisible] = useState(false);
 
 useEffect(() => {
   setLoading(true);
@@ -156,7 +159,18 @@ useEffect(() => {
     console.log('CLIENT INFO:', clients);
 }, [visite]);
 
-
+  useEffect(() => {
+    if (!visite?.idutilisateur) return;
+  
+    setLoading(true);
+  
+    fetch(`${BASE_URL}/user/${visite.idutilisateur}`)
+      .then(res => res.json())
+      .then(json => setUsers(json))
+      .catch(err => console.log(err))
+      .finally(() => setLoading(false));
+      console.log('User INFO:', users);
+  }, [visite]);
 
 useEffect(() => {
   setLoading(true);
@@ -186,72 +200,183 @@ useEffect(() => {
     );
   }
 
-  return (
-    <View style={styles.safe}>
-      <PageHeader title="Résultat rapport B2B" />
-      
-      <KeyboardAwareScrollView
-        enableOnAndroid
-        extraScrollHeight={100}
-        keyboardShouldPersistTaps="handled"
-      >
-        <ScrollView style={styles.container}>
-          
-          {/* VISITE INFO */}
-          <View style={styles.card}>
-            <Text style={styles.title}>Informations visite</Text>
+return (
+  <View style={styles.safe}>
+    <PageHeader title="Résultat rapport B2B" />
 
-            <Text>Client : {clients?.nom || 'Inconnu'}</Text>
-            <Text>Zone : {clients?.zone || 'Inconnue'}</Text>
-            <Text>Quartier : {clients?.quartier || 'Inconnu'}</Text>
-            <Text>Agence : {clients?.agence.intitule || 'Inconnue'}</Text>
-            <Text>Catégorie : {clients?.categorie_client.intitule}</Text>
-            <Text>Date visite : {visite?.date}</Text>
+    <KeyboardAwareScrollView
+      contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      {/* Informations client */}
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Informations du client</Text>
+
+        <View style={styles.infoRow}>
+          <Ionicons name="business-outline" size={18} color={C.primary} />
+          <View style={styles.infoContent}>
+            <Text style={styles.infoLabel}>Client</Text>
+            <Text style={styles.infoValue}>{clients?.nom || 'Inconnu'}</Text>
           </View>
+        </View>
 
-          {/* DESCRIPTION */}
-          <View style={styles.card}>
-            <Text style={styles.title}>Description</Text>
-            <Text>{rapport?.description}</Text>
+        <View style={styles.infoRow}>
+          <Ionicons name="location-outline" size={18} color={C.primary} />
+          <View style={styles.infoContent}>
+            <Text style={styles.infoLabel}>Localisation</Text>
+            <Text style={styles.infoValue}>
+              {clients?.zone || '—'} • {clients?.quartier || '—'}
+            </Text>
           </View>
+        </View>
 
-          {/* ACTION */}
-          <View style={styles.card}>
-            <Text style={styles.title}>Action à faire</Text>
-            <Text>{rapport?.action_a_faire}</Text>
+        <View style={styles.infoRow}>
+          <Ionicons name="briefcase-outline" size={18} color={C.primary} />
+          <View style={styles.infoContent}>
+            <Text style={styles.infoLabel}>Agence</Text>
+            <Text style={styles.infoValue}>
+              {clients?.agence?.intitule || 'Inconnue'}
+            </Text>
           </View>
+        </View>
 
-          {/* PHOTO */}
-          <View style={styles.card}>
-            <Text style={styles.title}>Photo</Text>
-
-            {rapport?.sary ? (
-              <Image
-                source={{ uri: rapport.sary }}
-                style={styles.image}
-              />
-            ) : (
-              <Text>Aucune photo</Text>
-            )}
+        <View style={styles.infoRow}>
+          <Ionicons name="pricetag-outline" size={18} color={C.primary} />
+          <View style={styles.infoContent}>
+            <Text style={styles.infoLabel}>Catégorie client</Text>
+            <Text style={styles.infoValue}>
+              {clients?.categorie_client?.intitule || '—'}
+            </Text>
           </View>
+        </View>
 
-          {/* RDV */}
-          <View style={styles.card}>
-            <Text style={styles.title}>Prochain rendez-vous</Text>
-            <Text>{rapport?.prochaine_visite}</Text>
+        <View style={styles.infoRow}>
+          <Ionicons name="calendar-outline" size={18} color={C.primary} />
+          <View style={styles.infoContent}>
+            <Text style={styles.infoLabel}>Date de visite</Text>
+            <Text style={styles.infoValue}>
+              {visite?.date
+                ? new Date(visite.date).toLocaleDateString('fr-FR')
+                : '—'}
+            </Text>
           </View>
+        </View>
+        <View style={styles.infoRow}>
+          <Ionicons name="list-outline" size={18} color={C.primary} />
+          <View style={styles.infoContent}>
+            <Text style={styles.infoLabel}>Type de visite</Text>
+            <Text style={styles.infoValue}>
+              {visite?.categorie_visite?.intitule || '—'}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.infoRow}>
+          <Ionicons name="person-outline" size={18} color={C.primary} />
+          <View style={styles.infoContent}>
+            <Text style={styles.infoLabel}>Commerciale</Text>
+            <Text style={styles.infoValue}>
+              {users?.name || '-'} {users?.firstname || '-'}
+            </Text>
+          </View>
+        </View>
+      </View>
 
-        </ScrollView>
-      </KeyboardAwareScrollView>
-    </View>
-  );
+      {/* Correspondant */}
+      {rapport?.correspondant && (
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Correspondant</Text>
+
+          <Text style={styles.correspondantName}>
+            {rapport.correspondant.nom}
+          </Text>
+
+          <Text style={styles.correspondantInfo}>
+            {rapport.correspondant.poste}
+          </Text>
+
+          <Text style={styles.correspondantInfo}>
+            {rapport.correspondant.contact}
+          </Text>
+        </View>
+      )}
+
+      {/* Description */}
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Description</Text>
+        <Text style={styles.description}>
+          {rapport.description || 'Aucune description'}
+        </Text>
+      </View>
+
+      {/* Action */}
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Action à faire</Text>
+        <Text style={styles.description}>
+          {rapport.action_a_faire || 'Aucune action prévue'}
+        </Text>
+      </View>
+
+      {/* Photo */}
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Photo</Text>
+
+        {rapport.sary ? (
+          <TouchableOpacity onPress={() => setPhotoVisible(true)}>
+            <Image source={{ uri: rapport.sary }} style={styles.image} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.emptyPhoto}>
+            <Ionicons name="image-outline" size={40} color={C.grey} />
+            <Text style={styles.emptyText}>Aucune photo</Text>
+          </View>
+        )}
+      </View>
+
+      {/* Rendez-vous */}
+      <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Prochain rendez-vous</Text>
+
+        <Text style={styles.rdvText}>
+          {rapport.prochaine_visite
+            ? new Date(rapport.prochaine_visite).toLocaleDateString('fr-FR')
+            : 'Aucun rendez-vous prévu'}
+        </Text>
+      </View>
+    </KeyboardAwareScrollView>
+    <Modal
+      visible={photoVisible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setPhotoVisible(false)}
+    >
+      <View style={styles.modalContainer}>
+        <TouchableOpacity
+          style={styles.modalBackground}
+          onPress={() => setPhotoVisible(false)}
+          activeOpacity={1}
+        >
+          <Image
+            source={{ uri: rapport.sary ?? undefined }}
+            style={styles.fullImage}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </View>
+    </Modal>
+  </View>
+);
 }
 
 const styles = StyleSheet.create({
-  container: {
+  safe: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
-    padding: 15,
+    backgroundColor: C.lightBg,
+  },
+
+  content: {
+    padding: 16,
+    paddingBottom: 40,
   },
 
   center: {
@@ -261,22 +386,110 @@ const styles = StyleSheet.create({
   },
 
   card: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 15,
+    backgroundColor: C.white,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 6,
+    elevation: 3,
   },
 
-  title: {
+  sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: 10,
+    color: C.dark,
+    marginBottom: 16,
   },
-  safe: { flex: 1, backgroundColor: C.lightBg },
+
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 14,
+  },
+
+  infoContent: {
+    marginLeft: 12,
+    flex: 1,
+  },
+
+  infoLabel: {
+    fontSize: 12,
+    color: C.grey,
+    marginBottom: 2,
+  },
+
+  infoValue: {
+    fontSize: 15,
+    color: C.dark,
+    fontWeight: '500',
+  },
+
+  correspondantName: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: C.dark,
+    marginBottom: 6,
+  },
+
+  correspondantInfo: {
+    fontSize: 14,
+    color: C.grey,
+    marginBottom: 4,
+  },
+
+  description: {
+    fontSize: 15,
+    lineHeight: 24,
+    color: C.dark,
+  },
 
   image: {
     width: '100%',
-    height: 200,
-    borderRadius: 12,
+    height: 240,
+    borderRadius: 14,
+    resizeMode: 'cover',
   },
+
+  emptyPhoto: {
+    height: 160,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  emptyText: {
+    marginTop: 8,
+    color: C.grey,
+    fontSize: 14,
+  },
+
+  rdvText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: C.primary,
+  },
+  modalContainer: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.9)',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+modalBackground: {
+  flex: 1,
+  width: '100%',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+fullImage: {
+  width: '95%',
+  height: '80%',
+},
 });

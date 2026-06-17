@@ -1,22 +1,21 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  SafeAreaView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
-import { useLocalSearchParams, useRouter  } from 'expo-router';
-import { BASE_URL } from '@/config/api';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import PageHeader from '@/components/PageHeader';
+import { BASE_URL } from '@/config/api';
 import { useAuth } from '@/context/AuthContext';
 import { fetchWithTimeout } from '@/utils/fetchWithTimeout';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 
 const C = {
   primary: '#EF2D24',
@@ -30,6 +29,27 @@ const C = {
   blue2:'#509597',
   green:'#328332',
 };
+
+async function parseJsonSafe<T>(response: Response): Promise<T | null> {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text) as T;
+  } catch (error) {
+    console.warn('parseJsonSafe failed', response.url, text, error);
+    return null;
+  }
+}
+
+async function parseJsonOrRaw(response: Response): Promise<any> {
+  const text = await response.text();
+  if (!text) return null;
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { raw: text };
+  }
+}
 
 export default function RapportRetail() {
   const router = useRouter();
@@ -61,12 +81,22 @@ const addLog = (title: string, data?: any) => {
 };
 
 useEffect(() => {
-    fetch(`${BASE_URL}/client/${prospect}`)
-      .then((res) => res.json())
-      .then((json) => setClient(json))
-      .catch((err) => Alert.alert('Erreur', err.message))
-      .finally(() => setLoading(false));
-  }, []);
+    if (!prospect) {
+      return
+    }
+    const loadClient = async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/client/${prospect}`);
+        const json = await parseJsonSafe<any>(res);
+        if (json) setClient(json);
+      } catch (err: any) {
+        Alert.alert('Erreur', err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadClient();
+  }, [prospect]);
 
   // ===================== GET VISITE + PRODUITS =====================
 useEffect(() => {
@@ -74,32 +104,39 @@ useEffect(() => {
 
   addLog('FETCH VISITE START', { idVisite });
 
-  fetch(`${BASE_URL}/visite/${idVisite}`)
-    .then(async (res) => {
+  const loadVisite = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/visite/${idVisite}`);
       addLog('VISITE STATUS', res.status);
 
-      const text = await res.text();
-
-      const json = JSON.parse(text);
+      const json = await parseJsonSafe<any>(res);
+      if (!json) {
+        addLog('VISITE PARSE FAILED', 'Invalid JSON response');
+        return;
+      }
 
       addLog('VISITE OK', json);
-
       setVisite(json);
-    })
-    .catch((err) => {
+    } catch (err: any) {
       addLog('VISITE FETCH ERROR', err);
-    });
+    }
+  };
+  loadVisite();
 }, [idVisite]);
 
 useEffect(() => {
   addLog('FETCH PRODUITS START');
 
-  fetch(`${BASE_URL}/produits`)
-    .then(async (res) => {
+  const loadProduits = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/produits`);
       addLog('PRODUITS STATUS', res.status);
 
-      const text = await res.text();
-      const prodData = JSON.parse(text);
+      const prodData = await parseJsonSafe<any>(res);
+      if (!prodData) {
+        addLog('PRODUITS PARSE FAILED', 'Invalid JSON response');
+        return;
+      }
 
       addLog('PRODUITS OK', prodData);
 
@@ -120,33 +157,34 @@ useEffect(() => {
           volume: '',
         }))
       );
-    })
-    .catch((err) => {
+    } catch (err: any) {
       addLog('PRODUITS FETCH ERROR', err);
-    });
+    }
+  };
+  loadProduits();
 }, []);
 
   // ===================== GET PLV =====================
 useEffect(() => {
   addLog('FETCH PLV START');
 
-  fetch(`${BASE_URL}/plvs`)
-    .then(async res => {
+  const loadPlvs = async () => {
+    try {
+      const res = await fetch(`${BASE_URL}/plvs`);
       addLog('PLV STATUS', res.status);
 
-      const text = await res.text();
-
-      try {
-        const json = JSON.parse(text);
+      const json = await parseJsonSafe<any>(res);
+      if (json) {
         addLog('PLV OK', json);
         setPlvs(json);
-      } catch (e) {
-        addLog('PLV PARSE ERROR', text);
+      } else {
+        addLog('PLV PARSE FAILED', 'Invalid JSON response');
       }
-    })
-    .catch(err => {
+    } catch (err: any) {
       addLog('PLV FETCH ERROR', err);
-    });
+    }
+  };
+  loadPlvs();
 }, []);
 
   // ===================== UPDATE PRODUIT =====================
@@ -237,22 +275,16 @@ const handleSubmit = async () => {
 
     console.log('Status:', response.status);
 
-    const text = await response.text();
-    console.log('Réponse brute:', text);
-
-    let result;
-    
-    console.log('TEXT VISITE :', text);
-
-    try {
-      result = JSON.parse(text);
-      console.log('RESULTAT VISITE :', result);
-    } catch {
-      throw new Error('Réponse serveur invalide');
-    }
+    const result = await parseJsonOrRaw(response);
+    console.log('Réponse brute:', result);
+    console.log('TEXT VISITE :', JSON.stringify(result));
 
     if (!response.ok) {
-      throw new Error(result.message || 'Erreur insertion visite');
+      throw new Error(result?.message || 'Erreur insertion visite');
+    }
+
+    if (!result?.id) {
+      throw new Error('Réponse serveur invalide - pas de visite ID');
     }
 
     const idVisite2 = result.id; 
@@ -854,7 +886,7 @@ const handleSubmit = async () => {
             {p.selected && (
             <>
                 <TextInput
-                placeholder="Prix achat"
+                placeholder="Prix achat (Ar)"
                 keyboardType="numeric"
                 style={styles.input}
                 value={p.prix_achat}
@@ -864,7 +896,7 @@ const handleSubmit = async () => {
                 />
 
                 <TextInput
-                placeholder="Prix vente gros"
+                placeholder="Prix vente gros (Ar)"
                 keyboardType="numeric"
                 style={styles.input}
                 value={p.prix_vente_gros}
@@ -874,7 +906,7 @@ const handleSubmit = async () => {
                 />
 
                 <TextInput
-                placeholder="Prix vente détail"
+                placeholder="Prix vente détail (Ar)"
                 keyboardType="numeric"
                 style={styles.input}
                 value={p.prix_vente_details}
@@ -884,7 +916,7 @@ const handleSubmit = async () => {
                 />
 
                 <TextInput
-                placeholder="Coût transport"
+                placeholder="Coût transport (Ar)"
                 keyboardType="numeric"
                 style={styles.input}
                 value={p.cout_transport}
@@ -904,7 +936,7 @@ const handleSubmit = async () => {
                 />
 
                 <TextInput
-                placeholder="Quantité"
+                placeholder="Quantité (Tonnes)"
                 keyboardType="numeric"
                 style={styles.input}
                 value={p.volume}
@@ -928,22 +960,22 @@ const handleSubmit = async () => {
               onChangeText={v => updateAutre(i, 'nom', v)}
             />
 
-            <TextInput placeholder="Prix achat" style={styles.input} keyboardType="numeric"
+            <TextInput placeholder="Prix achat (Ar)" style={styles.input} keyboardType="numeric"
               value={p.prix_achat}
               onChangeText={v => updateAutre(i, 'prix_achat', v)}
             />
 
-            <TextInput placeholder="Prix vente gros" style={styles.input} keyboardType="numeric"
+            <TextInput placeholder="Prix vente gros (Ar)" style={styles.input} keyboardType="numeric"
               value={p.prix_vente_gros}
               onChangeText={v => updateAutre(i, 'prix_vente_gros', v)}
             />
 
-            <TextInput placeholder="Prix vente détail" style={styles.input} keyboardType="numeric"
+            <TextInput placeholder="Prix vente détail (Ar)" style={styles.input} keyboardType="numeric"
               value={p.prix_vente_details}
               onChangeText={v => updateAutre(i, 'prix_vente_details', v)}
             />
 
-            <TextInput placeholder="Transport" style={styles.input} keyboardType="numeric"
+            <TextInput placeholder="Coût transport (Ar)" style={styles.input} keyboardType="numeric"
               value={p.cout_transport}
               onChangeText={v => updateAutre(i, 'cout_transport', v)}
             />
@@ -953,7 +985,7 @@ const handleSubmit = async () => {
               onChangeText={v => updateAutre(i, 'marge', v)}
             />
 
-            <TextInput placeholder="Quantité" style={styles.input} keyboardType="numeric"
+            <TextInput placeholder="Quantité (Tonnes)" style={styles.input} keyboardType="numeric"
               value={p.volume}
               onChangeText={v => updateAutre(i, 'volume', v)}
             />
@@ -1015,6 +1047,7 @@ const handleSubmit = async () => {
         )} */}
       </ScrollView>
       </KeyboardAvoidingView>
+
       </KeyboardAwareScrollView>
     {/* </SafeAreaView> */}
     </View>
