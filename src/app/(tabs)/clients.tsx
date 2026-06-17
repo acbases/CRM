@@ -45,6 +45,7 @@ export default function Clients() {
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState('');
   const [activeZone, setActiveZone] = useState<string | null>(null);
+  const [showAllZones, setShowAllZones] = useState(false);
 
   const fetchClients = async () => {
     try {
@@ -158,7 +159,7 @@ export default function Clients() {
           )}
         </View>
 
-        {uniqueZones.length > 0 && (
+        {uniqueZones.length > 6 && (
           <View style={styles.filterBar}>
             <TouchableOpacity
               style={[styles.chip, !activeZone && styles.chipActive]}
@@ -169,7 +170,7 @@ export default function Clients() {
                 Toutes zones
               </Text>
             </TouchableOpacity>
-            {uniqueZones.map((zone) => (
+            {(showAllZones ? uniqueZones : uniqueZones.slice(0, 6)).map((zone) => (
               <TouchableOpacity
                 key={zone}
                 style={[styles.chip, activeZone === zone && styles.chipActive]}
@@ -181,6 +182,19 @@ export default function Clients() {
                 </Text>
               </TouchableOpacity>
             ))}
+            <TouchableOpacity
+              onPress={() => setShowAllZones(!showAllZones)}
+              style={styles.showMoreBtn}
+            >
+              <Text style={styles.showMoreText}>
+                {showAllZones ? 'Réduire' : 'Voir plus'}
+              </Text>
+              <Ionicons
+                name={showAllZones ? 'chevron-up-outline' : 'chevron-down-outline'}
+                size={16}
+                color={C.primary}
+              />
+            </TouchableOpacity>
           </View>
         )}
       </View>
@@ -293,4 +307,18 @@ const styles = StyleSheet.create({
   metaText: { fontSize: 12, color: C.grey, flex: 1 },
   empty: { alignItems: 'center', paddingTop: 60, gap: 12 },
   emptyTitle: { fontSize: 16, color: C.grey, fontWeight: '600' },
+  
+  showMoreBtn: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  paddingVertical: 6,
+},
+
+showMoreText: {
+  color: C.primary,
+  fontSize: 12,
+  fontWeight: '600',
+  marginRight: 4,
+},
 });
