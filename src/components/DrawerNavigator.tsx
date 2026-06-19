@@ -10,6 +10,7 @@ import {
   Modal,
   Pressable,
   StatusBar,
+  ScrollView,
 } from 'react-native';
 import { Slot, useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -41,7 +42,8 @@ const MENU_ITEMS: MenuItem[] = [
   { name: 'Accueil',         route: '/accueil',    icon: 'home-outline'        },
   { name: 'Liste clients',         route: '/clients',    icon: 'people-outline'      },
   { name: 'Nouveau Client',  route: '/newClient',  icon: 'person-add-outline'  },
-  { name: 'Nouvelle Visite', route: '/newVisite',  icon: 'calendar-outline'    },
+  { name: 'Nouvelle Prospection', route: '/newVisite',  icon: 'calendar-outline'    },
+  { name: 'Plannification visite', route: '/plannifier',  icon: 'calendar-outline'    },
   { name: 'Planning',        route: '/planning',   icon: 'list-outline'        },
   { name: 'Modifier le mot de passe',        route: '/resetPassword',   icon: 'key-outline'        },
 ];
@@ -54,7 +56,8 @@ const PAGE_TITLES: Record<string, string> = {
   accueil:   'Accueil',
   clients:   'Liste clients',
   newClient: 'Nouveau Client',
-  newVisite: 'Nouvelle Visite',
+  newVisite: 'Nouvelle Prospection',
+  plannifier:'Plannification visite',
   planning:  'Planning',
   allVisite: 'Toutes les visites',
   resetPassword: 'Modifier le mot de passe',
@@ -172,7 +175,7 @@ export default function DrawerNavigator() {
       <Animated.View
         style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}
       >
-        <SafeAreaView style={{ flex: 1 }}>
+        <SafeAreaView style={styles.drawerContainer}>
           {/* Hero rouge */}
           <View style={styles.drawerHero}>
             <View style={styles.drawerLogoWrapper}>
@@ -191,40 +194,38 @@ export default function DrawerNavigator() {
           </View>
 
           {/* Menu items */}
-          <View style={styles.menuList}>
-            {allItems.map((item) => {
-              const active = isActive(item.route);
-              return (
-                <TouchableOpacity
-                  key={item.route}
-                  style={[styles.menuItem, active && styles.menuItemActive]}
-                  onPress={() => navigate(item.route)}
-                  activeOpacity={0.75}
-                >
-                  <View style={[styles.menuIconWrap, active && styles.menuIconWrapActive]}>
-                    <Ionicons
-                      name={item.icon}
-                      size={20}
-                      color={active ? C.primary : C.grey}
-                    />
-                  </View>
-                  <Text style={[styles.menuLabel, active && styles.menuLabelActive]}>
-                    {item.name}
-                  </Text>
-                  {active && <View style={styles.activeDot} />}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={styles.menuContent}
+              showsVerticalScrollIndicator={false}
+            >
+              {allItems.map((item) => {
+                const active = isActive(item.route);
+                return (
+                  <TouchableOpacity
+                    key={item.route}
+                    style={[styles.menuItem, active && styles.menuItemActive]}
+                    onPress={() => navigate(item.route)}
+                    activeOpacity={0.75}
+                  >
+                    <View style={[styles.menuIconWrap, active && styles.menuIconWrapActive]}>
+                      <Ionicons name={item.icon} size={20} color={active ? C.primary : C.grey} />
+                    </View>
+                    <Text style={[styles.menuLabel, active && styles.menuLabelActive]}>
+                      {item.name}
+                    </Text>
+                    {active && <View style={styles.activeDot} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          
 
           {/* Footer */}
           <View style={styles.drawerFooter}>
             <View style={styles.footerDivider} />
-            <TouchableOpacity
-              style={styles.logoutItem}
-              onPress={askLogout}
-              activeOpacity={0.75}
-            >
+            <TouchableOpacity style={styles.logoutItem} onPress={askLogout} activeOpacity={0.75}>
               <View style={styles.logoutIconWrap}>
                 <Ionicons name="log-out-outline" size={20} color={C.primary} />
               </View>
@@ -345,7 +346,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 6, height: 0 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
-    zIndex: 20,
+    zIndex: 100,
+    // zIndex: 20,
+    flexDirection: 'column',
   },
   drawerHero: {
     backgroundColor: C.primary,
@@ -372,7 +375,7 @@ const styles = StyleSheet.create({
   drawerUserName: { color: 'rgba(255,255,255,0.75)', fontSize: 13 },
 
   /* Menu */
-  menuList: { flex: 1, paddingHorizontal: 12, paddingTop: 12 },
+  // menuList: { flex: 1, paddingHorizontal: 12, paddingTop: 12 },
   menuItem: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: 12, paddingHorizontal: 12,
@@ -391,7 +394,7 @@ const styles = StyleSheet.create({
   activeDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: C.primary },
 
   /* Footer */
-  drawerFooter: { paddingHorizontal: 12, paddingBottom: 12 },
+  // drawerFooter: { paddingHorizontal: 12, paddingBottom: 12 },
   footerDivider: { height: 1, backgroundColor: C.divider, marginBottom: 8 },
   logoutItem: {
     flexDirection: 'row', alignItems: 'center',
@@ -457,4 +460,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   btnConfirmText: { fontSize: 14, color: C.white, fontWeight: '700' },
+
+  menuList: {
+    flex: 1,
+  },
+
+  menuContent: {
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    paddingBottom: 12,
+  },
+
+  drawerFooter: {
+    paddingHorizontal: 12,
+    paddingBottom: 20, // 👈 12 important (safe area + éviter blocage bas)
+    paddingTop: 8,
+    backgroundColor: C.white,
+  },
+
+  drawerContainer: {
+    flex: 1,
+    flexDirection: 'column',
+    overflow: 'hidden',
+  },
 });

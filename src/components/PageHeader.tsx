@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
+  Image,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +14,17 @@ interface Props {
   title: string;
   onBack?: () => void;
 }
+const C = {
+  primary: '#EF2D24',
+  white: '#FFFFFF',
+  grey: '#88898E',
+  lightBg: '#F5F5F7',
+  darkText: '#1A1A1A',
+  activeItemBg: '#FDEDED',
+  iconBg: '#F3F4F6',
+  activeIconBg: '#FECACA',
+  divider: '#ECECEC',
+};
 
 export default function PageHeader({ title, onBack }: Props) {
   const router = useRouter();
@@ -36,6 +48,11 @@ export default function PageHeader({ title, onBack }: Props) {
         >
           <Ionicons name="arrow-back-outline" size={24} color="#FFFFFF" />
         </TouchableOpacity>
+        <Image
+          source={require('../../assets/logo.png')}
+          style={styles.headerLogo}
+          resizeMode="contain"
+        />
 
         <Text style={styles.title} numberOfLines={1}>
           {title}
@@ -66,6 +83,13 @@ const styles = StyleSheet.create({
     marginRight: 8,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  headerLogo: {
+    width: 36,
+    height: 36,
+    marginRight: 10,
+    borderRadius: 6,
+    backgroundColor: C.white,
   },
   title: {
     color: '#FFFFFF',

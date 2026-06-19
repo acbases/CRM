@@ -173,12 +173,6 @@ export default function NewVisiteScreen() {
     (c) => c.statut === 'B2B'
   );
 
-  const motifVisiteFiltree = isB2B
-    ? motifVisiteList.filter(
-        (item) => ![7, 9, 11].includes(item.id)
-      )
-    : motifVisiteList;
-
   const handleSubmit = async () => {
     // if (!clientId || clientId < 1) {
     //   Alert.alert('Erreur', 'Veuillez sélectionner un client valide');
@@ -195,64 +189,50 @@ export default function NewVisiteScreen() {
         idcategorie: motifVisiteId,
         date: formatDate(date),
         statut: 0,
-        type: 1,
+        type: 0,
         idtype: typeVisiteId,
         object: objectif,
       };
 
 
-      if (isB2B) {
         const response = await fetchWithTimeout(
-          `${BASE_URL}/visite`,
-          {
+            `${BASE_URL}/visite`,
+            {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json',
-              Accept: 'application/json',
+                'Content-Type': 'application/json',
+                Accept: 'application/json',
             },
             body: JSON.stringify(body),
-          }
+            }
         );
 
         const text = await response.text();
 
         let result;
-      
+        
         try {
-          result = JSON.parse(text);
-          
+            result = JSON.parse(text);
+            
         } catch {
-          throw new Error('Réponse serveur invalide');
+            throw new Error('Réponse serveur invalide');
         }
 
         if (!response.ok) {
-          throw new Error(result.message || 'Erreur insertion visite');
+            throw new Error(result.message || 'Erreur insertion visite');
         }
 
-        const idVisite = result.id;
+        // const idVisite = result.id;
 
-        router.push({
-          pathname: '/rapportB2B',
-          params: {
-            idVisite: String(idVisite),
-          },
-        });
+        // router.push({
+        //     pathname: '/rapportB2B',
+        //     params: {
+        //     idVisite: String(idVisite),
+        //     },
+        // });
 
         resetForm();
         Alert.alert('Succès', 'Visite enregistrée avec succès');
-      }
-
-      // =========================
-      // 🔥 CAS B2C → REDIRECTION
-      // =========================
-      else {
-        router.push({
-          pathname: '/scan2',
-          params: {
-            body: JSON.stringify(body),
-          },
-        });
-      }
 
     } catch (err: any) {
       Alert.alert('Erreur', err.message);
@@ -273,49 +253,49 @@ export default function NewVisiteScreen() {
         enableOnAndroid
         extraScrollHeight={100}
       >
-    <View style={styles.field}>
-      {/* <View style={styles.labelRow}>
+    {/* <View style={styles.field}>
+      <View style={styles.labelRow}>
         <Ionicons name="business-outline" size={14} color={C.grey} style={styles.labelIcon} />
         <Text style={styles.label}>Visite B2B</Text>
-      </View> */}
+      </View>
 
       <TouchableOpacity onPress={toggleB2B}>
-  <View style={styles.switchContainer}>
-    
-    <View style={[
-      styles.track,
-      { backgroundColor: isB2B ? C.green : C.grey }
-    ]} />
+        <View style={styles.switchContainer}>
+            
+            <View style={[
+            styles.track,
+            { backgroundColor: isB2B ? C.green : C.grey }
+            ]} />
 
-    <Animated.View
-      style={[
-        styles.circle,
-        {
-          transform: [{
-            translateX: anim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [2, 22], // gauche → droite
-            }),
-          }],
-        },
-      ]}
-    >
-      <Ionicons
-        name={isB2B ? "checkmark" : "close"}
-        size={14}
-        color="#fff"
-      />
-    </Animated.View>
+            <Animated.View
+            style={[
+                styles.circle,
+                {
+                transform: [{
+                    translateX: anim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [2, 22], // gauche → droite
+                    }),
+                }],
+                },
+            ]}
+            >
+            <Ionicons
+                name={isB2B ? "checkmark" : "close"}
+                size={14}
+                color="#fff"
+            />
+            </Animated.View>
 
-  </View>
-  <Text style={[
-    styles.switchLabel,
-    { color: isB2B ? C.green : C.grey }
-  ]}>
-    {isB2B ? "B2B" : "B2B"}
-  </Text>
-</TouchableOpacity>
-    </View>
+        </View>
+        <Text style={[
+            styles.switchLabel,
+            { color: isB2B ? C.green : C.grey }
+        ]}>
+            {isB2B ? "B2B" : "B2B"}
+        </Text>
+        </TouchableOpacity>
+    </View> */}
         {/* Nature visite */}
         <View style={styles.field}>
           <View style={styles.labelRow}>
@@ -353,11 +333,11 @@ export default function NewVisiteScreen() {
         </View>
 
         {/* Type client */}
-        {isB2B && (
+        {/* {isB2B && ( */}
           <View style={styles.field}>
             <View style={styles.labelRow}>
               <Ionicons name="people-outline" size={14} color={C.grey} style={styles.labelIcon} />
-              <Text style={styles.label}>Type client (B2B)</Text>
+              <Text style={styles.label}>Type client</Text>
             </View>
 
             <TouchableOpacity
@@ -370,10 +350,10 @@ export default function NewVisiteScreen() {
               <Text style={styles.chevron}>▾</Text>
             </TouchableOpacity>
           </View>
-        )}
+        {/* )} */}
 
         {/* Agence */}
-        {isB2B && (
+        {/* {isB2B && ( */}
           <View style={styles.field}>
             <View style={styles.labelRow}>
               <Ionicons name="business-outline" size={14} color={C.grey} style={styles.labelIcon} />
@@ -390,10 +370,10 @@ export default function NewVisiteScreen() {
               <Text style={styles.chevron}>▾</Text>
             </TouchableOpacity>
           </View>
-        )}
+        {/* )} */}
         
         {/* Client autocomplete  */}
-        {isB2B && (
+        {/* {isB2B && ( */}
         <View style={styles.field}>
           <View style={styles.labelRow}>
             <Ionicons name="search-outline" size={14} color={C.grey} style={styles.labelIcon} />
@@ -429,10 +409,51 @@ export default function NewVisiteScreen() {
             </View>
           )}
         </View>
-        )}
+        {/* )} */}
         
 
-        
+        {/* Date */}
+        <View style={styles.field}>
+          <View style={styles.labelRow}>
+            <Ionicons name="calendar-outline" size={14} color={C.grey} style={styles.labelIcon} />
+            <Text style={styles.label}>Date de la visite</Text>
+          </View>
+          {Platform.OS !== 'web' ? (
+            <>
+              <TouchableOpacity
+                style={styles.select}
+                onPress={() => setShowPicker(true)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.selectText}>
+                  {date.toLocaleDateString('fr-FR')}
+                </Text>
+              </TouchableOpacity>
+              {showPicker && (
+                <DateTimePicker
+                  value={date}
+                  mode="date"
+                  display="calendar"
+                  onChange={onChangeDate}
+                />
+              )}
+            </>
+          ) : (
+            <input
+              type="date"
+              style={{
+                padding: 12,
+                borderRadius: 10,
+                border: `1px solid ${C.border}`,
+                width: '93%',
+                fontSize: 14,
+                backgroundColor: C.white,
+              }}
+              value={date.toISOString().split('T')[0]}
+              onChange={(e) => setDate(new Date(e.target.value))}
+            />
+          )}
+        </View>
 
         {/* Objectif */}
         <View style={styles.field}>
@@ -469,7 +490,7 @@ export default function NewVisiteScreen() {
             <View style={styles.handle} />
             <Text style={styles.sheetTitle}>Nature de la visite</Text>
             <ScrollView>
-              {motifVisiteFiltree.map((item) => (
+              {motifVisiteList.map((item) => (
                 <TouchableOpacity
                   key={item.id}
                   style={styles.sheetItem}
@@ -517,7 +538,7 @@ export default function NewVisiteScreen() {
             <View style={styles.handle} />
             <Text style={styles.sheetTitle}>Type de client</Text>
             <ScrollView>
-              {typeClientB2BList.map((item) => (
+              {typeClientList.map((item) => (
                 <TouchableOpacity
                   key={item.id}
                   style={styles.sheetItem}

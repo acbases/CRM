@@ -13,9 +13,12 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  View
+  View,
+  Image,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
 
 const C = {
   primary: '#EF2D24',
@@ -71,6 +74,11 @@ export default function RapportRetail() {
   const [autrePlv, setAutrePlv] = useState('');
   const [debugLog, setDebugLog] = useState('');
   const [loading, setLoading] = useState(true);
+
+  const [photo, setPhoto] = useState<string | null>(null);
+
+
+
 
 const addLog = (title: string, data?: any) => {
   const msg =
@@ -247,295 +255,368 @@ const buildRefPrix = () => {
     }));
 };
 
+// ======================PHOTO=======================================================
+
+
+
+    const pickImage = () => {
+      Alert.alert('Photo', 'Choisissez une source', [
+        { text: 'Caméra', onPress: openCamera },
+        { text: 'Galerie', onPress: openGallery },
+        { text: 'Annuler', style: 'cancel' },
+      ]);
+    };
+  
+    const openGallery = async () => {
+      try {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert('Permission refusée', "Autorisez l'accès à la galerie");
+          return;
+        }
+        const result = await ImagePicker.launchImageLibraryAsync({
+          mediaTypes: ImagePicker.MediaTypeOptions.Images,
+          allowsEditing: true,
+          quality: 0.3,
+        });
+        if (!result.canceled) setPhoto(result.assets[0].uri);
+      } catch {}
+    };
+  
+    const openCamera = async () => {
+      try {
+        if (Platform.OS === 'web') {
+          const result = await ImagePicker.launchImageLibraryAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            quality: 0.3,
+          });
+          if (!result.canceled) setPhoto(result.assets[0].uri);
+          return;
+        }
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert('Permission refusée', "Autorisez l'accès à la caméra");
+          return;
+        }
+        const result = await ImagePicker.launchCameraAsync({ allowsEditing: true, quality: 0.3 });
+        if (!result.canceled) setPhoto(result.assets[0].uri);
+      } catch {}
+    };
+  
+
   // ===================== SUBMIT =====================
 const handleSubmit = async () => {
-  if (!idVisite) {
-    const corps = {
-      idclient: prospect,
-      idutilisateur: user.id,
-      idcategorie: 5,
-      date: new Date().toISOString().split('T')[0],
-      statut: 0,
-      type: 1,
-      idtype: 2,
-      object: null,
-    };
+  if (!photo) {
+    Alert.alert('Erreur', 'Veuillez ajouter une photo');
+    return;
+  }
+  try {
+    let visiteId: string | number;
 
-    const response = await fetchWithTimeout(
-      `${BASE_URL}/visite`,
+    if (!idVisite) {
+      const corps = {
+        idclient: prospect,
+        idutilisateur: user.id,
+        idcategorie: 5,
+        date: new Date().toISOString().split('T')[0],
+        statut: 0,
+        type: 1,
+        idtype: 2,
+        object: null,
+      };
+
+      const response = await fetchWithTimeout(
+        `${BASE_URL}/visite`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify(corps),
+        }
+      );
+
+      console.log('Status:', response.status);
+
+      const result = await parseJsonOrRaw(response);
+      console.log('Réponse brute:', result);
+      console.log('TEXT VISITE :', JSON.stringify(result));
+
+      if (!response.ok) {
+        throw new Error(result?.message || 'Erreur insertion visite');
+      }
+
+      if (!result?.id) {
+        throw new Error('Réponse serveur invalide - pas de visite ID');
+      }
+
+      visiteId = result.id; 
+    }
+    else{
+      visiteId = idVisite as string;
+    }
+    addLog('SUBMIT START');
+
+    // 1️⃣ INSERT RAPPORT
+    
+    const formData = new FormData();
+    formData.append('idvisite', String(visiteId));
+    formData.append('description', description);
+    formData.append('autre_plv', autrePlv);
+    
+    const filename = photo.split('/').pop() || 'photo.jpg';
+    const match = /\.(\w+)$/.exec(filename);
+    formData.append('sary', {
+      uri: photo,
+      name: filename,
+      type: match ? `image/${match[1]}` : 'image/jpeg',
+    } as any);
+
+    const resRapport = await fetch(`${BASE_URL}/rapport`, {
+      method: 'POST',
+      headers: {
+        // ⚠️ Ne PAS mettre Content-Type manuellement
+        // fetch le génère automatiquement avec le boundary multipart
+        'Accept': 'application/json',
+      },
+      body: formData,
+    });
+
+    const rapportText = await resRapport.text();
+    addLog('RAPPORT RAW', rapportText);
+
+    let rapportData: any;
+    try {
+      rapportData = JSON.parse(rapportText);
+    } catch {
+      addLog('RAPPORT JSON ERROR', rapportText);
+      Alert.alert('Erreur', 'Réponse rapport invalide');
+      return;
+    }
+
+    if (!resRapport.ok) {
+      addLog('RAPPORT NOT OK', rapportData);
+      Alert.alert('Erreur rapport', rapportData?.message ?? 'Erreur rapport');
+      return;
+    }
+
+    // 2️⃣ INSERT PRODUIT_CLIENT (un POST par produit, champs à plat)
+    addLog('IDCLIENT VALUE', { idClient, type: typeof idClient });
+
+    const produitsSelectionnes = produits.filter(p => p.selected);
+
+    addLog('PRODUITS SELECTIONNES', produitsSelectionnes.map(p => ({ id: p.id, intitule: p.intitule })));
+
+    let produitClientData: any[] = [];
+
+    for (const p of produitsSelectionnes) {
+      const clientId = idClient ?? prospect;
+      const payload = { idclient: Number(clientId), idproduit: Number(p.id) };
+      addLog(`PRODUIT CLIENT POST ${p.id}`, payload);
+
+      const res = await fetch(
+        `${BASE_URL}/produitClient`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const text = await res.text();
+      addLog(`PRODUIT CLIENT RAW ${p.id}`, text);
+
+      if (!res.ok) {
+        Alert.alert('Erreur produit_client', text);
+        return;
+      }
+
+      try {
+        const json = JSON.parse(text);
+        // Le backend retourne soit l'objet directement, soit dans .data, soit un tableau
+        const row = Array.isArray(json) ? json[0] : (json?.data ?? json);
+        addLog(`PRODUIT CLIENT PARSED ${p.id}`, row);
+        if (row?.id) {
+          produitClientData.push({ ...row, _idproduit_origine: Number(p.id) });
+        }
+      } catch {
+        addLog(`PRODUIT CLIENT JSON ERROR ${p.id}`, text);
+      }
+    }
+
+    addLog('PRODUIT CLIENT DATA FINAL', produitClientData);
+
+      // 3️⃣ INSERT REF PRIX PRODUIT
+    const refPrix = produits
+      .filter(p => p.selected)
+      .map(p => {
+        const match = produitClientData.find(
+          (pc: any) =>
+            Number(pc._idproduit_origine) === Number(p.id) ||
+            Number(pc.idproduit) === Number(p.id)
+        );
+        addLog(`MATCH PRODUIT ${p.id}`, match ?? 'AUCUN MATCH');
+        return {
+          idvisite: Number(visiteId),
+          idproduit: match?.id ?? null,
+          prix_achat: p.prix_achat || null,
+          prix_vente_gros: p.prix_vente_gros || null,
+          prix_vente_details: p.prix_vente_details || null,
+          cout_transport: p.cout_transport || null,
+          marge: p.marge || null,
+          volume: p.volume || null,
+        };
+      });
+
+    addLog('REFPRIX PAYLOAD', refPrix);
+
+    if (refPrix.length > 0) {
+      const nullMatches = refPrix.filter(r => r.idproduit === null);
+      if (nullMatches.length > 0) {
+        addLog('REFPRIX NULL MATCHES', nullMatches);
+        Alert.alert('Erreur', `${nullMatches.length} produit(s) sans correspondance produit_client`);
+        return;
+      }
+
+      for (const item of refPrix) {
+        addLog('REFPRIX POST ITEM', item);
+
+        const resRefPrix = await fetch(
+          `${BASE_URL}/refPrixProduit`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify(item),
+          }
+        );
+
+        const refPrixText = await resRefPrix.text();
+        addLog('REFPRIX RAW', refPrixText);
+
+        if (!resRefPrix.ok) {
+          let refPrixData: any;
+          try {
+            refPrixData = JSON.parse(refPrixText);
+          } catch {
+            Alert.alert('Erreur ref_prix', refPrixText);
+            return;
+          }
+          Alert.alert('Erreur ref_prix', JSON.stringify(refPrixData));
+          return;
+        }
+      }
+    }
+
+    // 4️⃣ AUTRES PRODUITS (un POST par produit, champs à plat)
+    for (const ap of autresProduits) {
+      const { id: _localId, ...apFields } = ap; // exclure l'id temporaire frontend
+      const autrePayload = {
+        idvisite: Number(visiteId),
+        nom: apFields.nom,
+        prix_achat: apFields.prix_achat || null,
+        prix_vente_gros: apFields.prix_vente_gros || null,
+        prix_vente_details: apFields.prix_vente_details || null,
+        cout_transport: apFields.cout_transport || null,
+        marge: apFields.marge || null,
+        volume: apFields.volume || null,
+      };
+      addLog('AUTRE PRODUIT POST ITEM', autrePayload);
+
+      const resAutre = await fetch(
+        `${BASE_URL}/autreProduit`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(autrePayload),
+        }
+      );
+
+      const autreText = await resAutre.text();
+      addLog('AUTRE PRODUIT RAW', autreText);
+
+      if (!resAutre.ok) {
+        let autreData: any;
+        try {
+          autreData = JSON.parse(autreText);
+        } catch {
+          Alert.alert('Erreur autres produits', autreText);
+          return;
+        }
+        Alert.alert('Erreur autres produits', JSON.stringify(autreData));
+        return;
+      }
+    }
+
+    // 5️⃣ PLV (un POST par PLV sélectionnée)
+    for (const idplv of selectedPlvs) {
+      const plvPayload = { idvisite: Number(visiteId), idplv };
+      addLog('PLV POST ITEM', plvPayload);
+
+      const resPlv = await fetch(
+        `${BASE_URL}/recensementPlv`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+          body: JSON.stringify(plvPayload),
+        }
+      );
+
+      const plvText = await resPlv.text();
+      addLog('PLV RAW', plvText);
+
+      if (!resPlv.ok) {
+        let plvData: any;
+        try {
+          plvData = JSON.parse(plvText);
+        } catch {
+          Alert.alert('Erreur PLV', plvText);
+          return;
+        }
+        Alert.alert('Erreur PLV', JSON.stringify(plvData));
+        return;
+      }
+    }
+
+    // 6️⃣ UPDATE STATUT VISITE
+    const resUpdate = await fetch(
+      `${BASE_URL}/visite/${visiteId}`,
       {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify(corps),
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ statut: 1 }),
       }
     );
 
-    console.log('Status:', response.status);
+    const updateText = await resUpdate.text();
+    addLog('VISITE UPDATE RAW', updateText);
 
-    const result = await parseJsonOrRaw(response);
-    console.log('Réponse brute:', result);
-    console.log('TEXT VISITE :', JSON.stringify(result));
-
-    if (!response.ok) {
-      throw new Error(result?.message || 'Erreur insertion visite');
+    if (!resUpdate.ok) {
+      addLog('VISITE UPDATE FAILED', updateText);
+      // Non bloquant, on continue
     }
 
-    if (!result?.id) {
-      throw new Error('Réponse serveur invalide - pas de visite ID');
-    }
+    // 7️⃣ RESET
+    setProduits(prev => prev.map(p => ({
+      ...p,
+      selected: false,
+      prix_achat: '',
+      prix_vente_gros: '',
+      prix_vente_details: '',
+      cout_transport: '',
+      marge: '',
+      volume: '',
+    })));
+    setAutresProduits([]);
+    setSelectedPlvs([]);
+    setDescription('');
+    setAutrePlv('');
+    setPhoto(null);
+    setErrorMessage('');
 
-    const idVisite2 = result.id; 
-    try {
-      addLog('SUBMIT START');
-
-      // 1️⃣ INSERT RAPPORT
-      const resRapport = await fetch(
-        `${BASE_URL}/rapport`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({
-            idvisite: idVisite2,
-            description,
-            autre_plv: autrePlv,
-          }),
-        }
-      );
-
-      const rapportText = await resRapport.text();
-      addLog('RAPPORT RAW', rapportText);
-
-      let rapportData: any;
-      try {
-        rapportData = JSON.parse(rapportText);
-      } catch {
-        addLog('RAPPORT JSON ERROR', rapportText);
-        Alert.alert('Erreur', 'Réponse rapport invalide');
-        return;
-      }
-
-      if (!resRapport.ok) {
-        addLog('RAPPORT NOT OK', rapportData);
-        Alert.alert('Erreur rapport', rapportData?.message ?? 'Erreur rapport');
-        return;
-      }
-
-      // 2️⃣ INSERT PRODUIT_CLIENT (un POST par produit, champs à plat)
-      addLog('IDCLIENT VALUE', { idClient, type: typeof idClient });
-
-      const produitsSelectionnes = produits.filter(p => p.selected);
-
-      addLog('PRODUITS SELECTIONNES', produitsSelectionnes.map(p => ({ id: p.id, intitule: p.intitule })));
-
-      let produitClientData: any[] = [];
-
-      for (const p of produitsSelectionnes) {
-        const payload = { idclient: Number(idClient), idproduit: Number(p.id) };
-        addLog(`PRODUIT CLIENT POST ${p.id}`, payload);
-
-        const res = await fetch(
-          `${BASE_URL}/produitClient`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(payload),
-          }
-        );
-
-        const text = await res.text();
-        addLog(`PRODUIT CLIENT RAW ${p.id}`, text);
-
-        if (!res.ok) {
-          Alert.alert('Erreur produit_client', text);
-          return;
-        }
-
-        try {
-          const json = JSON.parse(text);
-          // Le backend retourne soit l'objet directement, soit dans .data, soit un tableau
-          const row = Array.isArray(json) ? json[0] : (json?.data ?? json);
-          addLog(`PRODUIT CLIENT PARSED ${p.id}`, row);
-          if (row?.id) {
-            produitClientData.push({ ...row, _idproduit_origine: Number(p.id) });
-          }
-        } catch {
-          addLog(`PRODUIT CLIENT JSON ERROR ${p.id}`, text);
-        }
-      }
-
-      addLog('PRODUIT CLIENT DATA FINAL', produitClientData);
-
-      // 3️⃣ INSERT REF PRIX PRODUIT
-      const refPrix = produits
-        .filter(p => p.selected)
-        .map(p => {
-          const match = produitClientData.find(
-            (pc: any) =>
-              Number(pc._idproduit_origine) === Number(p.id) ||
-              Number(pc.idproduit) === Number(p.id)
-          );
-          addLog(`MATCH PRODUIT ${p.id}`, match ?? 'AUCUN MATCH');
-          return {
-            idvisite: Number(idVisite2),
-            idproduit: match?.id ?? null,
-            prix_achat: p.prix_achat || null,
-            prix_vente_gros: p.prix_vente_gros || null,
-            prix_vente_details: p.prix_vente_details || null,
-            cout_transport: p.cout_transport || null,
-            marge: p.marge || null,
-            volume: p.volume || null,
-          };
-        });
-
-      addLog('REFPRIX PAYLOAD', refPrix);
-
-      if (refPrix.length > 0) {
-        const nullMatches = refPrix.filter(r => r.idproduit === null);
-        if (nullMatches.length > 0) {
-          addLog('REFPRIX NULL MATCHES', nullMatches);
-          Alert.alert('Erreur', `${nullMatches.length} produit(s) sans correspondance produit_client`);
-          return;
-        }
-
-        for (const item of refPrix) {
-          addLog('REFPRIX POST ITEM', item);
-
-          const resRefPrix = await fetch(
-            `${BASE_URL}/refPrixProduit`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-              body: JSON.stringify(item),
-            }
-          );
-
-          const refPrixText = await resRefPrix.text();
-          addLog('REFPRIX RAW', refPrixText);
-
-          if (!resRefPrix.ok) {
-            let refPrixData: any;
-            try {
-              refPrixData = JSON.parse(refPrixText);
-            } catch {
-              Alert.alert('Erreur ref_prix', refPrixText);
-              return;
-            }
-            Alert.alert('Erreur ref_prix', JSON.stringify(refPrixData));
-            return;
-          }
-        }
-      }
-
-      // 4️⃣ AUTRES PRODUITS (un POST par produit, champs à plat)
-      for (const ap of autresProduits) {
-        const { id: _localId, ...apFields } = ap; // exclure l'id temporaire frontend
-        const autrePayload = {
-          idvisite: Number(idVisite2),
-          nom: apFields.nom,
-          prix_achat: apFields.prix_achat || null,
-          prix_vente_gros: apFields.prix_vente_gros || null,
-          prix_vente_details: apFields.prix_vente_details || null,
-          cout_transport: apFields.cout_transport || null,
-          marge: apFields.marge || null,
-          volume: apFields.volume || null,
-        };
-        addLog('AUTRE PRODUIT POST ITEM', autrePayload);
-
-        const resAutre = await fetch(
-          `${BASE_URL}/autreProduit`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(autrePayload),
-          }
-        );
-
-        const autreText = await resAutre.text();
-        addLog('AUTRE PRODUIT RAW', autreText);
-
-        if (!resAutre.ok) {
-          let autreData: any;
-          try {
-            autreData = JSON.parse(autreText);
-          } catch {
-            Alert.alert('Erreur autres produits', autreText);
-            return;
-          }
-          Alert.alert('Erreur autres produits', JSON.stringify(autreData));
-          return;
-        }
-      }
-
-      // 5️⃣ PLV (un POST par PLV sélectionnée)
-      for (const idplv of selectedPlvs) {
-        const plvPayload = { idvisite: Number(idVisite2), idplv };
-        addLog('PLV POST ITEM', plvPayload);
-
-        const resPlv = await fetch(
-          `${BASE_URL}/recensementPlv`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(plvPayload),
-          }
-        );
-
-        const plvText = await resPlv.text();
-        addLog('PLV RAW', plvText);
-
-        if (!resPlv.ok) {
-          let plvData: any;
-          try {
-            plvData = JSON.parse(plvText);
-          } catch {
-            Alert.alert('Erreur PLV', plvText);
-            return;
-          }
-          Alert.alert('Erreur PLV', JSON.stringify(plvData));
-          return;
-        }
-      }
-
-      // 6️⃣ UPDATE STATUT VISITE
-      const resUpdate = await fetch(
-        `${BASE_URL}/visite/${idVisite2}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ statut: 1 }),
-        }
-      );
-
-      const updateText = await resUpdate.text();
-      addLog('VISITE UPDATE RAW', updateText);
-
-      if (!resUpdate.ok) {
-        addLog('VISITE UPDATE FAILED', updateText);
-        // Non bloquant, on continue
-      }
-
-      // 7️⃣ RESET
-      setProduits(prev => prev.map(p => ({
-        ...p,
-        selected: false,
-        prix_achat: '',
-        prix_vente_gros: '',
-        prix_vente_details: '',
-        cout_transport: '',
-        marge: '',
-        volume: '',
-      })));
-      setAutresProduits([]);
-      setSelectedPlvs([]);
-      setDescription('');
-      setAutrePlv('');
-      setErrorMessage('');
-
-      Alert.alert('Succès', 'Rapport complet enregistré ✅');
-      router.replace('/planning');
+    Alert.alert('Succès', 'Rapport complet enregistré ✅');
+    router.replace('/planning');
 
     }catch (err: any) {
       addLog('SUBMIT ERROR', err);
@@ -543,265 +624,6 @@ const handleSubmit = async () => {
       setErrorMessage(msg);
       Alert.alert('Erreur', msg);
     }
-  }
-  else{
-    try {
-      addLog('SUBMIT START');
-
-      // 1️⃣ INSERT RAPPORT
-      const resRapport = await fetch(
-        `${BASE_URL}/rapport`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({
-            idvisite: idVisite,
-            description,
-            autre_plv: autrePlv,
-          }),
-        }
-      );
-
-      const rapportText = await resRapport.text();
-      addLog('RAPPORT RAW', rapportText);
-
-      let rapportData: any;
-      try {
-        rapportData = JSON.parse(rapportText);
-      } catch {
-        addLog('RAPPORT JSON ERROR', rapportText);
-        Alert.alert('Erreur', 'Réponse rapport invalide');
-        return;
-      }
-
-      if (!resRapport.ok) {
-        addLog('RAPPORT NOT OK', rapportData);
-        Alert.alert('Erreur rapport', rapportData?.message ?? 'Erreur rapport');
-        return;
-      }
-
-      // 2️⃣ INSERT PRODUIT_CLIENT (un POST par produit, champs à plat)
-      addLog('IDCLIENT VALUE', { idClient, type: typeof idClient });
-
-      const produitsSelectionnes = produits.filter(p => p.selected);
-
-      addLog('PRODUITS SELECTIONNES', produitsSelectionnes.map(p => ({ id: p.id, intitule: p.intitule })));
-
-      let produitClientData: any[] = [];
-
-      for (const p of produitsSelectionnes) {
-        const payload = { idclient: Number(idClient), idproduit: Number(p.id) };
-        addLog(`PRODUIT CLIENT POST ${p.id}`, payload);
-
-        const res = await fetch(
-          `${BASE_URL}/produitClient`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(payload),
-          }
-        );
-
-        const text = await res.text();
-        addLog(`PRODUIT CLIENT RAW ${p.id}`, text);
-
-        if (!res.ok) {
-          Alert.alert('Erreur produit_client', text);
-          return;
-        }
-
-        try {
-          const json = JSON.parse(text);
-          // Le backend retourne soit l'objet directement, soit dans .data, soit un tableau
-          const row = Array.isArray(json) ? json[0] : (json?.data ?? json);
-          addLog(`PRODUIT CLIENT PARSED ${p.id}`, row);
-          if (row?.id) {
-            produitClientData.push({ ...row, _idproduit_origine: Number(p.id) });
-          }
-        } catch {
-          addLog(`PRODUIT CLIENT JSON ERROR ${p.id}`, text);
-        }
-      }
-
-      addLog('PRODUIT CLIENT DATA FINAL', produitClientData);
-
-      // 3️⃣ INSERT REF PRIX PRODUIT
-      const refPrix = produits
-        .filter(p => p.selected)
-        .map(p => {
-          const match = produitClientData.find(
-            (pc: any) =>
-              Number(pc._idproduit_origine) === Number(p.id) ||
-              Number(pc.idproduit) === Number(p.id)
-          );
-          addLog(`MATCH PRODUIT ${p.id}`, match ?? 'AUCUN MATCH');
-          return {
-            idvisite: Number(idVisite),
-            idproduit: match?.id ?? null,
-            prix_achat: p.prix_achat || null,
-            prix_vente_gros: p.prix_vente_gros || null,
-            prix_vente_details: p.prix_vente_details || null,
-            cout_transport: p.cout_transport || null,
-            marge: p.marge || null,
-            volume: p.volume || null,
-          };
-        });
-
-      addLog('REFPRIX PAYLOAD', refPrix);
-
-      if (refPrix.length > 0) {
-        const nullMatches = refPrix.filter(r => r.idproduit === null);
-        if (nullMatches.length > 0) {
-          addLog('REFPRIX NULL MATCHES', nullMatches);
-          Alert.alert('Erreur', `${nullMatches.length} produit(s) sans correspondance produit_client`);
-          return;
-        }
-
-        for (const item of refPrix) {
-          addLog('REFPRIX POST ITEM', item);
-
-          const resRefPrix = await fetch(
-            `${BASE_URL}/refPrixProduit`,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-              body: JSON.stringify(item),
-            }
-          );
-
-          const refPrixText = await resRefPrix.text();
-          addLog('REFPRIX RAW', refPrixText);
-
-          if (!resRefPrix.ok) {
-            let refPrixData: any;
-            try {
-              refPrixData = JSON.parse(refPrixText);
-            } catch {
-              Alert.alert('Erreur ref_prix', refPrixText);
-              return;
-            }
-            Alert.alert('Erreur ref_prix', JSON.stringify(refPrixData));
-            return;
-          }
-        }
-      }
-
-      // 4️⃣ AUTRES PRODUITS (un POST par produit, champs à plat)
-      for (const ap of autresProduits) {
-        const { id: _localId, ...apFields } = ap; // exclure l'id temporaire frontend
-        const autrePayload = {
-          idvisite: Number(idVisite),
-          nom: apFields.nom,
-          prix_achat: apFields.prix_achat || null,
-          prix_vente_gros: apFields.prix_vente_gros || null,
-          prix_vente_details: apFields.prix_vente_details || null,
-          cout_transport: apFields.cout_transport || null,
-          marge: apFields.marge || null,
-          volume: apFields.volume || null,
-        };
-        addLog('AUTRE PRODUIT POST ITEM', autrePayload);
-
-        const resAutre = await fetch(
-          `${BASE_URL}/autreProduit`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(autrePayload),
-          }
-        );
-
-        const autreText = await resAutre.text();
-        addLog('AUTRE PRODUIT RAW', autreText);
-
-        if (!resAutre.ok) {
-          let autreData: any;
-          try {
-            autreData = JSON.parse(autreText);
-          } catch {
-            Alert.alert('Erreur autres produits', autreText);
-            return;
-          }
-          Alert.alert('Erreur autres produits', JSON.stringify(autreData));
-          return;
-        }
-      }
-
-      // 5️⃣ PLV (un POST par PLV sélectionnée)
-      for (const idplv of selectedPlvs) {
-        const plvPayload = { idvisite: Number(idVisite), idplv };
-        addLog('PLV POST ITEM', plvPayload);
-
-        const resPlv = await fetch(
-          `${BASE_URL}/recensementPlv`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify(plvPayload),
-          }
-        );
-
-        const plvText = await resPlv.text();
-        addLog('PLV RAW', plvText);
-
-        if (!resPlv.ok) {
-          let plvData: any;
-          try {
-            plvData = JSON.parse(plvText);
-          } catch {
-            Alert.alert('Erreur PLV', plvText);
-            return;
-          }
-          Alert.alert('Erreur PLV', JSON.stringify(plvData));
-          return;
-        }
-      }
-
-      // 6️⃣ UPDATE STATUT VISITE
-      const resUpdate = await fetch(
-        `${BASE_URL}/visite/${idVisite}`,
-        {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-          body: JSON.stringify({ statut: 1 }),
-        }
-      );
-
-      const updateText = await resUpdate.text();
-      addLog('VISITE UPDATE RAW', updateText);
-
-      if (!resUpdate.ok) {
-        addLog('VISITE UPDATE FAILED', updateText);
-        // Non bloquant, on continue
-      }
-
-      // 7️⃣ RESET
-      setProduits(prev => prev.map(p => ({
-        ...p,
-        selected: false,
-        prix_achat: '',
-        prix_vente_gros: '',
-        prix_vente_details: '',
-        cout_transport: '',
-        marge: '',
-        volume: '',
-      })));
-      setAutresProduits([]);
-      setSelectedPlvs([]);
-      setDescription('');
-      setAutrePlv('');
-      setErrorMessage('');
-
-      Alert.alert('Succès', 'Rapport complet enregistré ✅');
-      router.replace('/planning');
-
-    }catch (err: any) {
-      addLog('SUBMIT ERROR', err);
-      const msg = err?.message || JSON.stringify(err) || 'Erreur inconnue';
-      setErrorMessage(msg);
-      Alert.alert('Erreur', msg);
-    }
-  }
-  
 };
 
   // ===================== UI =====================
@@ -1006,19 +828,33 @@ const handleSubmit = async () => {
             </Text>
           </TouchableOpacity>
         ))}
+        <View style={styles.block}>
+          <TextInput
+            placeholder="Autre PLV"
+            style={styles.input}
+            value={autrePlv}
+            onChangeText={setAutrePlv}
+          />
+        </View>
 
-        <TextInput
-          placeholder="Autre PLV"
-          style={styles.input}
-          value={autrePlv}
-          onChangeText={setAutrePlv}
-        />
+        {/* Photo */}
+        <View style={styles.block}>
+          <View style={styles.labelRow}>
+            <Ionicons name="camera-outline" size={14} color={C.grey} style={styles.labelIcon} />
+            <Text style={styles.label}>Photo</Text>
+          </View>
+          <TouchableOpacity style={styles.uploadBtn} onPress={pickImage} activeOpacity={0.85}>
+            <Ionicons name="camera-outline" size={18} color={C.white} style={{ marginRight: 8 }} />
+            <Text style={styles.uploadText}>Choisir une photo</Text>
+          </TouchableOpacity>
+          {photo && <Image source={{ uri: photo }} style={styles.photoPreview} />}
+        </View>
 
         {/* COMMENTAIRE */}
         <Text style={styles.section}>Commentaire</Text>
 
         <TextInput
-          placeholder="Description visite"
+          placeholder="Commentaire visite"
           style={[styles.input, { height: 100 }]}
           multiline
           value={description}
@@ -1218,4 +1054,19 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
   },
+
+  block: { marginBottom: 16 },
+  labelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
+  labelIcon: { marginRight: 6 },
+  label: { fontSize: 13, fontWeight: '600', color: C.dark },
+  uploadBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.blue2,
+    padding: 14,
+    borderRadius: 12,
+  },
+  uploadText: { color: C.white, fontWeight: '700', fontSize: 14 },
+  photoPreview: { width: '100%', height: 220, borderRadius: 14, marginTop: 12 },
 });

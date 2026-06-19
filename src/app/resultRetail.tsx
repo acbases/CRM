@@ -6,6 +6,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
+  Image,TouchableOpacity,Modal,
 } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { BASE_URL } from '../config/api';
@@ -33,6 +34,7 @@ export default function ResultRetail() {
   const [visite, setVisite] = useState<any>(null);
   const [client, setClient] = useState<any>(null);
   const [users, setUsers] = useState<any>(null);
+  const [photoVisible, setPhotoVisible] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -372,10 +374,44 @@ export default function ResultRetail() {
             {rapport?.[0]?.autre_plv || 'Aucune autre PLV'}
           </Text>
         </View>
+        {/* Photo */}
+        <View style={styles.card}>
+          <Text style={styles.sectionTitle}>Photo</Text>
+
+          {rapport?.[0]?.sary ? (   // ✅ rapport est un tableau comme les autres données
+            <TouchableOpacity onPress={() => setPhotoVisible(true)}>
+              <Image source={{ uri: rapport[0].sary }} style={styles.image} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.emptyPhoto}>
+              <Ionicons name="image-outline" size={40} color={C.grey} />
+              <Text style={styles.emptyText}>Aucune photo</Text>
+            </View>
+          )}
+        </View>
       </ScrollView>
       </KeyboardAwareScrollView>
     </SafeAreaView>
-    
+    <Modal
+      visible={photoVisible}
+      transparent={true}
+      animationType="fade"
+      onRequestClose={() => setPhotoVisible(false)}
+    >
+      <View style={styles.modalContainer}>
+        <TouchableOpacity
+          style={styles.modalBackground}
+          onPress={() => setPhotoVisible(false)}
+          activeOpacity={1}
+        >
+          <Image
+            source={{ uri: rapport?.[0]?.sary ?? undefined }}  // ✅
+            style={styles.fullImage}
+            resizeMode="contain"
+          />
+        </TouchableOpacity>
+      </View>
+    </Modal>
     </View>
   );
 }
@@ -520,4 +556,44 @@ sectionTitle: {
   color: C.dark,
   marginBottom: 16,
 },
+  modalContainer: {
+  flex: 1,
+  backgroundColor: 'rgba(0,0,0,0.9)',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+modalBackground: {
+  flex: 1,
+  width: '100%',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+fullImage: {
+  width: '95%',
+  height: '80%',
+},
+  image: {
+    width: '100%',
+    height: 240,
+    borderRadius: 14,
+    resizeMode: 'cover',
+  },
+
+  emptyPhoto: {
+    height: 160,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  emptyText: {
+    marginTop: 8,
+    color: C.grey,
+    fontSize: 14,
+  },
 });

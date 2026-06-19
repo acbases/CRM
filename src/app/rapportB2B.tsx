@@ -254,94 +254,47 @@ useEffect(() => {
       return;
     }
     setSubmitting(true);
-    if (!idVisite) {
-      const corps = {
-        idclient: prospect,
-        idutilisateur: user.id,
-        idcategorie: 5,
-        date: new Date().toISOString().split('T')[0],
-        statut: 0,
-        type: 1,
-        idtype: 2,
-        object: null,
-      };
+    try{ 
+      let visiteId: string | number;
+      if (!idVisite) {
+        const corps = {
+          idclient: prospect,
+          idutilisateur: user.id,
+          idcategorie: 5,
+          date: new Date().toISOString().split('T')[0],
+          statut: 0,
+          type: 1,
+          idtype: 2,
+          object: null,
+        };
 
-      const response = await fetchWithTimeout(
-        `${BASE_URL}/visite`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-          body: JSON.stringify(corps),
-        }
-      );
-
-      const result = await parseJsonSafe<any>(response);
-      if (!result) {
-        throw new Error('Réponse serveur invalide');
-      }
-
-      if (!response.ok) {
-        throw new Error(result.message || 'Erreur insertion visite');
-      }
-
-      const idVisite2 = result.id; 
-      try {
-        const formData = new FormData();
-        formData.append('idvisite', String(idVisite2));
-        formData.append('description', description);
-        formData.append('action_a_faire', actionAFaire);
-        formData.append('prochaine_visite', dateRdv ? dateRdv.toISOString().split('T')[0] : '');
-        formData.append(
-          'idcorrespondant',
-          selectedCorrespondant ? String(selectedCorrespondant.correspondant.id) : ''
+        const response = await fetchWithTimeout(
+          `${BASE_URL}/visite`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+            body: JSON.stringify(corps),
+          }
         );
 
-        const filename = photo.split('/').pop() || 'photo.jpg';
-        const match = /\.(\w+)$/.exec(filename);
-        formData.append('sary', {
-          uri: photo,
-          name: filename,
-          type: match ? `image/${match[1]}` : 'image/jpeg',
-        } as any);
-
-        const response = await fetch(
-          `${BASE_URL}/rapportB2B`,
-          { method: 'POST', body: formData, headers: { Accept: 'application/json' } }
-        );
-
-        const data = await parseJsonOrRaw(response);
-
+        const result = await parseJsonSafe<any>(response);
         if (!response.ok) {
-          Alert.alert('Erreur', typeof data === 'object' ? JSON.stringify(data) : String(data));
-          return;
+          throw new Error(result?.message || 'Erreur insertion visite');
+        }
+        if (!result?.id) {
+          throw new Error('Réponse serveur invalide - pas de visite ID');
         }
 
-        await fetch(`${BASE_URL}/visite/${idVisite2}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ statut: 1 }),
-        }).catch(() => {});
-
-        Alert.alert('Succès', 'Rapport enregistré avec succès');
-        setDescription('');
-        setActionAFaire('');
-        setPhoto(null);
-        setDateRdv(new Date());
-        setSelectedCorrespondant(null);
-        router.replace('/planning');
-      } catch (err: any) {
-        Alert.alert('Erreur', err.message ?? 'Erreur serveur');
-      } finally {
-        setSubmitting(false);
+        visiteId = result.id; 
+      }else{
+        visiteId = idVisite as string;
       }
-    }
-    else{
-      try {
+        
       const formData = new FormData();
-      formData.append('idvisite', String(idVisite));
+      formData.append('idvisite', String(visiteId));
       formData.append('description', description);
       formData.append('action_a_faire', actionAFaire);
       formData.append('prochaine_visite', dateRdv ? dateRdv.toISOString().split('T')[0] : '');
@@ -370,7 +323,7 @@ useEffect(() => {
         return;
       }
 
-      await fetch(`${BASE_URL}/visite/${idVisite}`, {
+      await fetch(`${BASE_URL}/visite/${visiteId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ statut: 1 }),
@@ -388,10 +341,8 @@ useEffect(() => {
     } finally {
       setSubmitting(false);
     }
-   }
-    
   };
-
+    
   if (loading) {
     return (
       <View style={styles.safe}>
