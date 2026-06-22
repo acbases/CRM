@@ -29,6 +29,8 @@ const C = {
   orangeBg: '#FEF3C7',
   red: '#DC2626',
   redBg: '#FEE2E2',
+  blue:'#126bc4',
+  green2:'#328332',
 };
 
 const ITEMS_PER_PAGE = 10;
@@ -191,37 +193,51 @@ export default function Planning() {
   const renderItem = ({ item }: { item: Visite }) => {
     const status = getStatusInfo(item);
     return (
+
       <TouchableOpacity activeOpacity={0.8} onPress={() => handlePress(item)}>
         <View style={[styles.card, { borderLeftColor: status.color }]}>
           <View style={styles.cardTop}>
+          {/* GAUCHE : nom + infos */}
+          <View style={{ flex: 1, marginRight: 10 }}>
             <Text style={styles.clientName} numberOfLines={1}>
               {item.client.nom}
             </Text>
+            <View style={styles.row}>
+              <Ionicons name="pricetag-outline" size={13} color={C.grey} style={styles.rowIcon} />
+              <Text style={styles.rowText}>{item.client.categorie_client.intitule}</Text>
+            </View>
+            <View style={styles.row}>
+              <Ionicons name="location-outline" size={13} color={C.grey} style={styles.rowIcon} />
+              <Text style={styles.rowText}>{item.client.zone} — {item.client.quartier}</Text>
+            </View>
+            <View style={styles.row}>
+              <Ionicons name="calendar-outline" size={13} color={C.grey} style={styles.rowIcon} />
+              <Text style={styles.rowText}>{item.date.split(' ')[0]}</Text>
+            </View>
+            {item.categorie_visite && (
+              <View style={styles.row}>
+                <Ionicons name="document-text-outline" size={13} color={C.grey} style={styles.rowIcon} />
+                <Text style={styles.rowText}>{item.categorie_visite.intitule}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* DROITE : badge + boutons */}
+          <View style={styles.cardTopRight}>
             <View style={[styles.badge, { backgroundColor: status.bg }]}>
               <Text style={[styles.badgeText, { color: status.color }]}>
                 {status.label}
               </Text>
             </View>
+            <TouchableOpacity style={[styles.actionBtn, styles.editBtn]}>
+              <Ionicons name="create-outline" size={16} color={C.blue} />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]}>
+              <Ionicons name="trash-outline" size={16} color={C.red} />
+            </TouchableOpacity>
           </View>
-
-          <View style={styles.row}>
-            <Ionicons name="pricetag-outline" size={13} color={C.grey} style={styles.rowIcon} />
-            <Text style={styles.rowText}>{item.client.categorie_client.intitule}</Text>
-          </View>
-          <View style={styles.row}>
-            <Ionicons name="location-outline" size={13} color={C.grey} style={styles.rowIcon} />
-            <Text style={styles.rowText}>{item.client.zone} — {item.client.quartier}</Text>
-          </View>
-          <View style={styles.row}>
-            <Ionicons name="calendar-outline" size={13} color={C.grey} style={styles.rowIcon} />
-            <Text style={styles.rowText}>{item.date.split(' ')[0]}</Text>
-          </View>
-          {item.categorie_visite && (
-            <View style={styles.row}>
-              <Ionicons name="document-text-outline" size={13} color={C.grey} style={styles.rowIcon} />
-              <Text style={styles.rowText}>{item.categorie_visite.intitule}</Text>
-            </View>
-          )}
+        </View>
+          
         </View>
       </TouchableOpacity>
     );
@@ -446,11 +462,16 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 10,
-  },
+  flexDirection: 'row',
+  alignItems: 'flex-start',
+  justifyContent: 'space-between',
+  marginBottom: 10,
+},
+cardTopRight: {
+  alignItems: 'center',
+  gap: 8,
+  flexShrink: 0,
+},
   clientName: {
     fontSize: 15,
     fontWeight: '700',
@@ -532,4 +553,40 @@ pagination: {
   dotActive: { backgroundColor: C.primary },
   dotTxt: { fontSize: 13, fontWeight: '600', color: C.grey },
   dotTxtActive: { color: C.white },
+
+actionsRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+},
+
+actionBtn: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  paddingHorizontal: 12,
+  paddingVertical: 8,
+  borderRadius: 6,
+  gap: 6,
+  padding:6,
+},
+
+rightHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 10,
+},
+
+
+editBtn: {
+  backgroundColor: '#DBEAFE',
+},
+
+deleteBtn: {
+  backgroundColor: '#FEE2E2',
+},
+
+actionText: {
+  fontSize: 13,
+  fontWeight: '600',
+},
 });
