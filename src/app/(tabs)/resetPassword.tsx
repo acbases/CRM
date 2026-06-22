@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BASE_URL } from '@/config/api';
+import { useAuth } from '@/context/AuthContext';
 const C = {
   primary: '#EF2D24',
   white: '#FFFFFF',
@@ -27,25 +28,30 @@ const C = {
 
 export default function ResetPassword() {
   const router = useRouter();
+  const { user } = useAuth();
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+      console.log('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
 
     if (newPassword !== confirmPassword) {
       Alert.alert('Erreur', 'Les nouveaux mots de passe ne correspondent pas');
+      console.log('Erreur', 'Les nouveaux mots de passe ne correspondent pas');
       return;
     }
 
-    if (newPassword.length < 6) {
-      Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 6 caractères');
+    if (newPassword.length <= 3) {
+      Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 4 caractères');
+      console.log('Erreur', 'Le mot de passe doit contenir au moins 4 caractères');
       return;
     }
 
@@ -53,7 +59,7 @@ export default function ResetPassword() {
 
     try {
       const response = await fetch(
-        `${BASE_URL}/change-password`,
+        `${BASE_URL}/update-password`,
         {
           method: 'POST',
           headers: {
@@ -61,6 +67,7 @@ export default function ResetPassword() {
             Accept: 'application/json',
           },
           body: JSON.stringify({
+            email: user.email,
             current_password: currentPassword,
             new_password: newPassword,
           }),
@@ -81,9 +88,14 @@ export default function ResetPassword() {
       }
 
       Alert.alert('Succès', 'Mot de passe modifié avec succès');
-      router.back();
+
+      setConfirmPassword('');
+      setCurrentPassword('');
+      setNewPassword('');
+      
     } catch (err: any) {
       Alert.alert('Erreur', err.message);
+      console.log('Erreur', err.message);
     } finally {
       setLoading(false);
     }
@@ -131,10 +143,6 @@ export default function ResetPassword() {
             <Text style={styles.buttonText}>Modifier</Text>
           )}
         </TouchableOpacity>
-
-        {/* <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.back}>Retour</Text>
-        </TouchableOpacity> */}
       </View>
     </SafeAreaView>
   );
