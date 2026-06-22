@@ -149,7 +149,7 @@ export default function ResultRetail() {
         contentContainerStyle={styles.content}
       >
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Informations du client</Text>
+          <Text style={styles.sectionTitle}>Informations visite</Text>
 
           <View style={styles.infoRow}>
             <Ionicons name="business-outline" size={18} color={C.primary} />
@@ -200,7 +200,7 @@ export default function ResultRetail() {
           </View>
 
           <View style={styles.infoRow}>
-            <Ionicons name="list-outline" size={18} color={C.primary} />
+            <Ionicons name="layers-outline" size={18} color={C.primary} />
             <View style={styles.infoContent}>
               <Text style={styles.infoLabel}>Type visite</Text>
               <Text style={styles.infoValue}>

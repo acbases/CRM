@@ -661,9 +661,22 @@ const styles = StyleSheet.create({
     padding: 14, minHeight: 80, fontSize: 14, color: '#1A1A1A',
   },
   sheetSubmitBtn: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    backgroundColor: C.blue, borderRadius: 14, paddingVertical: 15,
-    marginTop: 20,
+    backgroundColor: C.blue,
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: 'center',
+    marginTop: 32,
+    marginBottom: 24,
+
+    shadowColor: C.blue,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+
+    elevation: 4,
   },
   sheetSubmitText: { color: '#FFFFFF', fontWeight: '700', fontSize: 15 },
 

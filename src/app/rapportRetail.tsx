@@ -630,12 +630,12 @@ const handleSubmit = async () => {
   return (
     <View style={styles.safe}>
     {/* <SafeAreaView style={styles.container}> */}
-      <PageHeader title="Rapport retail" />
-        <KeyboardAwareScrollView
-          enableOnAndroid
-          extraScrollHeight={100}
-          keyboardShouldPersistTaps="handled"
-        >
+    <PageHeader title="Rapport retail" />
+    <KeyboardAwareScrollView
+      enableOnAndroid
+      extraScrollHeight={100}
+      keyboardShouldPersistTaps="handled"
+    >
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -643,51 +643,62 @@ const handleSubmit = async () => {
     >
       <ScrollView
         keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.container}
+        contentContainerStyle={styles.scroll}
+        showsVerticalScrollIndicator={false}
       >
 
         {/* <Text style={styles.title}>Rapport Retail</Text> */}
         {/* <Text>Id visite: {idVisite}</Text> */}
         
-        {visite?.client ? (
-          <View style={styles.clientCard}>
-            <Text style={styles.clientTitle}>👤 Informations client</Text>
-            <Text style={styles.clientText}>
-                Nom: {visite?.client?.nom || '—'}
-            </Text>
+        
+        {/* Infos client */}
+                  
+        <View style={styles.clientCard}>
 
-            <Text style={styles.clientText}>
-                Zone: {visite?.client?.zone || '—'}
-            </Text>
+          {/* Header client */}
+          <View style={styles.clientHeader}>
+            <View style={styles.clientAvatar}>
+              <Ionicons name="business-outline" size={18} color={C.white} />
+            </View>
 
-            <Text style={styles.clientText}>
-                Quartier: {visite?.client?.quartier || '—'}
-            </Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.clientName}>
+                {visite?.client?.nom || client?.nom}
+              </Text>
 
-            <Text style={styles.clientText}>
-                Catégorie: {visite?.client?.categorie_client?.intitule || '—'}
+              <Text style={styles.clientSub}>
+                Client Retail
+              </Text>
+            </View>
+          </View>
+
+          {/* Category */}
+          <View style={styles.clientRow}>
+            <Ionicons name="pricetag-outline" size={16} color={C.primary} style={styles.rowIcon} />
+            <Text style={styles.clientMeta}>
+              {visite?.client?.categorie_client?.intitule ||
+                client?.categorie_client?.intitule || '—'}
             </Text>
           </View>
-        ) : (
-          <View style={styles.clientCard}>
-            <Text style={styles.clientTitle}>👤 Informations client</Text>
-            <Text style={styles.clientText}>
-              Nom: {client?.nom || '—'}
-            </Text>
 
-            <Text style={styles.clientText}>
-                Zone: {client?.zone || '—'}
-            </Text>
-
-            <Text style={styles.clientText}>
-                Quartier: {client?.quartier || '—'}
-            </Text>
-
-            <Text style={styles.clientText}>
-                Catégorie: {client?.categorie_client?.intitule || '—'}
+          {/* Location */}
+          <View style={styles.clientRow}>
+            <Ionicons name="location-outline" size={16} color={C.primary} style={styles.rowIcon} />
+            <Text style={styles.clientMeta}>
+              {(visite?.client?.zone || client?.zone) || '—'} — {(visite?.client?.quartier || client?.quartier) || '—'}
             </Text>
           </View>
-        )}
+
+          {/* Commercial */}
+          <View style={styles.clientRow}>
+            <Ionicons name="person-outline" size={16} color={C.primary} style={styles.rowIcon} />
+            <Text style={styles.clientMeta}>
+              {(user.name) || '—'} {(user.firstname) || '—'}
+            </Text>
+          </View>
+
+        </View>
+       
         
 
         {/* PRODUITS */}
@@ -863,6 +874,7 @@ const handleSubmit = async () => {
 
         {/* SUBMIT */}
         <TouchableOpacity style={styles.submit} onPress={handleSubmit}>
+          
           <Text
             style={{
               color: C.white,
@@ -870,8 +882,8 @@ const handleSubmit = async () => {
               fontWeight: '700',
               letterSpacing: 0.5,
             }}
-          >
-            Enregistrer rapport
+          >  
+            ✓ Enregistrer rapport
           </Text>
         </TouchableOpacity>
         {/* DEBUG */}
@@ -896,6 +908,8 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: C.lightBg,
   },
+
+  scroll: { padding: 16, paddingBottom: 40 },
 
   container: {
     paddingHorizontal: 16,
@@ -1002,23 +1016,17 @@ const styles = StyleSheet.create({
   },
 
   clientCard: {
-    backgroundColor: C.white,
+    backgroundColor: '#FFFFFF',
     borderRadius: 18,
-    padding: 18,
-    marginTop: 12,
-    marginBottom: 8,
+    padding: 16,
+    marginBottom: 16,
     borderLeftWidth: 5,
     borderLeftColor: C.primary,
-
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
   },
 
   clientTitle: {
@@ -1069,4 +1077,35 @@ const styles = StyleSheet.create({
   },
   uploadText: { color: C.white, fontWeight: '700', fontSize: 14 },
   photoPreview: { width: '100%', height: 220, borderRadius: 14, marginTop: 12 },
+
+  clientHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  clientAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: C.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+
+  clientSub: {
+    fontSize: 12,
+    color: C.grey,
+    marginTop: 2,
+  },
+
+  clientName: { fontSize: 16, fontWeight: '700', color: C.dark, marginBottom: 8 ,},
+  clientRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6,
+    paddingLeft: 4,},
+
+  rowIcon: { marginRight: 8, width: 18 ,},
+  clientMeta: { fontSize: 13, color: C.grey,
+    flex: 1, },
+
 });

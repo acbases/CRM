@@ -42,7 +42,7 @@ const MENU_ITEMS: MenuItem[] = [
   { name: 'Accueil',         route: '/accueil',    icon: 'home-outline'        },
   { name: 'Liste clients',         route: '/clients',    icon: 'people-outline'      },
   { name: 'Nouveau Client',  route: '/newClient',  icon: 'person-add-outline'  },
-  { name: 'Nouvelle Prospection', route: '/newVisite',  icon: 'calendar-outline'    },
+  { name: 'Nouvelle Prospection', route: '/newVisite',  icon: 'add-circle-outline'    },
   { name: 'Plannification visite', route: '/plannifier',  icon: 'calendar-outline'    },
   { name: 'Planning',        route: '/planning',   icon: 'list-outline'        },
   { name: 'Modifier le mot de passe',        route: '/resetPassword',   icon: 'key-outline'        },

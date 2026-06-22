@@ -19,6 +19,7 @@ import {
   TextInput,
   TouchableOpacity,
   View,
+  KeyboardAvoidingView,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { BASE_URL } from '../config/api';
@@ -363,42 +364,65 @@ useEffect(() => {
         extraScrollHeight={100}
         keyboardShouldPersistTaps="handled"
       >
-        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={80}
+        >
+        <ScrollView 
+          contentContainerStyle={styles.scroll} 
+          showsVerticalScrollIndicator={false} 
+          // contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+        >
 
           {/* Infos client */}
-          {visite?.client ? (
+          
             <View style={styles.clientCard}>
-              <Text style={styles.clientName}>{visite.client.nom }</Text>
+
+              {/* Header client */}
+              <View style={styles.clientHeader}>
+                <View style={styles.clientAvatar}>
+                  <Ionicons name="business-outline" size={18} color={C.white} />
+                </View>
+
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.clientName}>
+                    {visite?.client?.nom || client?.nom}
+                  </Text>
+
+                  <Text style={styles.clientSub}>
+                    Client B2B
+                  </Text>
+                </View>
+              </View>
+
+              {/* Category */}
               <View style={styles.clientRow}>
-                <Ionicons name="pricetag-outline" size={13} color={C.grey} style={styles.rowIcon} />
+                <Ionicons name="pricetag-outline" size={16} color={C.primary} style={styles.rowIcon} />
                 <Text style={styles.clientMeta}>
-                  {visite.client.categorie_client?.intitule || '—'}
+                  {visite?.client?.categorie_client?.intitule ||
+                    client?.categorie_client?.intitule || '—'}
                 </Text>
               </View>
+
+              {/* Location */}
               <View style={styles.clientRow}>
-                <Ionicons name="location-outline" size={13} color={C.grey} style={styles.rowIcon} />
+                <Ionicons name="location-outline" size={16} color={C.primary} style={styles.rowIcon} />
                 <Text style={styles.clientMeta}>
-                  {visite.client.zone} — {visite.client.quartier}
+                  {(visite?.client?.zone || client?.zone) || '—'} — {(visite?.client?.quartier || client?.quartier) || '—'}
                 </Text>
               </View>
+
+              {/* Commercial */}
+              <View style={styles.clientRow}>
+                <Ionicons name="person-outline" size={16} color={C.primary} style={styles.rowIcon} />
+                <Text style={styles.clientMeta}>
+                  {(user.name) || '—'} {(user.firstname) || '—'}
+                </Text>
+              </View>
+
             </View>
-          ) : (
-            <View style={styles.clientCard}>
-              <Text style={styles.clientName}>{client?.nom }</Text>
-              <View style={styles.clientRow}>
-                <Ionicons name="pricetag-outline" size={13} color={C.grey} style={styles.rowIcon} />
-                <Text style={styles.clientMeta}>
-                  {client?.categorie_client?.intitule || '—'}
-                </Text>
-              </View>
-              <View style={styles.clientRow}>
-                <Ionicons name="location-outline" size={13} color={C.grey} style={styles.rowIcon} />
-                <Text style={styles.clientMeta}>
-                  {client?.zone} — {client?.quartier}
-                </Text>
-              </View>
-            </View>
-          )}
 
           {/* Correspondant */}
           <View style={styles.block}>
@@ -521,7 +545,7 @@ useEffect(() => {
 
           {/* Submit */}
           <TouchableOpacity
-            style={[styles.submitBtn, submitting && { opacity: 0.7 }]}
+            style={[styles.submit, submitting && { opacity: 0.7 }]}
             onPress={handleSubmit}
             disabled={submitting}
             activeOpacity={0.85}
@@ -530,13 +554,20 @@ useEffect(() => {
               <ActivityIndicator color={C.white} size="small" />
             ) : (
               <>
-                <Ionicons name="checkmark-outline" size={18} color={C.white} style={{ marginRight: 6 }} />
-                <Text style={styles.submitText}>Enregistrer le rapport</Text>
+                
+                <Text style={{
+                  color: C.white,
+                  fontSize: 16,
+                  fontWeight: '700',
+                  letterSpacing: 0.5,
+                }}> 
+                ✓ Enregistrer rapport</Text>
               </>
             )}
           </TouchableOpacity>
 
         </ScrollView>
+        </KeyboardAvoidingView>
       </KeyboardAwareScrollView>
 
       {/* Modal correspondants */}
@@ -597,22 +628,24 @@ const styles = StyleSheet.create({
   scroll: { padding: 16, paddingBottom: 40 },
 
   clientCard: {
-    backgroundColor: C.white,
-    borderRadius: 14,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 18,
     padding: 16,
     marginBottom: 16,
-    borderLeftWidth: 4,
+    borderLeftWidth: 5,
     borderLeftColor: C.primary,
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.07,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
   },
-  clientName: { fontSize: 16, fontWeight: '700', color: C.dark, marginBottom: 8 },
-  clientRow: { flexDirection: 'row', alignItems: 'center', marginTop: 4 },
-  rowIcon: { marginRight: 6, width: 18 },
-  clientMeta: { fontSize: 13, color: C.grey },
+  clientName: { fontSize: 16, fontWeight: '700', color: C.dark, marginBottom: 8 ,},
+  clientRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6,
+    paddingLeft: 4,},
+  rowIcon: { marginRight: 8, width: 18 ,},
+  clientMeta: { fontSize: 13, color: C.grey,
+    flex: 1, },
 
   block: { marginBottom: 16 },
   labelRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 8 },
@@ -664,20 +697,25 @@ const styles = StyleSheet.create({
   uploadText: { color: C.white, fontWeight: '700', fontSize: 14 },
   photoPreview: { width: '100%', height: 220, borderRadius: 14, marginTop: 12 },
 
-  submitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+submit: {
     backgroundColor: C.blue,
-    paddingVertical: 16,
-    borderRadius: 14,
-    marginTop: 8,
-    elevation: 4,
-    shadowColor: C.primary,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
+    borderRadius: 16,
+    paddingVertical: 18,
+    alignItems: 'center',
+    marginTop: 32,
+    marginBottom: 24,
+
+    shadowColor: C.blue,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
     shadowRadius: 8,
+
+    elevation: 4,
   },
+
   submitText: { color: C.white, fontSize: 16, fontWeight: '700' },
 
   overlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'flex-end' },
@@ -694,4 +732,45 @@ const styles = StyleSheet.create({
   sheetItem: { paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: '#F3F4F6' },
   sheetItemName: { fontSize: 15, fontWeight: '600', color: C.dark },
   sheetItemMeta: { fontSize: 13, color: C.grey, marginTop: 2 },
+
+  container: {
+    paddingHorizontal: 16,
+    paddingBottom: 40,
+  },
+
+  clientHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+
+  clientAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: C.primary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+
+
+  clientSub: {
+    fontSize: 12,
+    color: C.grey,
+    marginTop: 2,
+  },
+
+  input: {
+    backgroundColor: C.inputBg,
+    borderWidth: 1,
+    borderColor: C.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginTop: 10,
+    fontSize: 15,
+    color: C.dark,
+  },
+
 });

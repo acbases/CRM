@@ -1360,11 +1360,22 @@ overlay: {
   },
 
   saveButton: {
-    flex: 1,
     backgroundColor: C.blue,
-    borderRadius: 14,
-    paddingVertical: 15,
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: 'center',
+    marginTop: 32,
+    marginBottom: 24,
+
+    shadowColor: C.blue,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+
+    elevation: 4,
   },
 
   saveText: {

@@ -711,15 +711,21 @@ circle: {
   },
   submitBtn: {
     backgroundColor: C.blue,
-    paddingVertical: 16,
-    borderRadius: 14,
+    borderRadius: 16,
+    paddingVertical: 18,
     alignItems: 'center',
-    marginTop: 8,
-    elevation: 4,
+    marginTop: 32,
+    marginBottom: 24,
+
     shadowColor: C.blue,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.25,
     shadowRadius: 8,
+
+    elevation: 4,
   },
   submitText: {
     color: C.white,

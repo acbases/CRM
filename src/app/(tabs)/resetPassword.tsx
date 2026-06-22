@@ -35,6 +35,11 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const passwordsMatch = () => {
+    if (!confirmPassword) return true; // ne rien afficher si vide
+    return newPassword === confirmPassword;
+  };
+
 
   const handleChangePassword = async () => {
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -92,7 +97,7 @@ export default function ResetPassword() {
       setConfirmPassword('');
       setCurrentPassword('');
       setNewPassword('');
-      
+
     } catch (err: any) {
       Alert.alert('Erreur', err.message);
       console.log('Erreur', err.message);
@@ -131,6 +136,14 @@ export default function ResetPassword() {
           onChangeText={setConfirmPassword}
           style={styles.input}
         />
+        {!passwordsMatch() && (
+          <View style={styles.errorRow}>
+            <Ionicons name="alert-circle-outline" size={18} color="red" />
+            <Text style={styles.errorText}>
+              Les mots de passe ne correspondent pas
+            </Text>
+          </View>
+        )}
 
         <TouchableOpacity
           style={styles.button}
@@ -192,5 +205,18 @@ const styles = StyleSheet.create({
   back: {
     marginTop: 15,
     color: '#d32f2f',
+  },
+
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+    alignSelf: 'flex-start',
+    gap: 5,
+  },
+
+  errorText: {
+    color: 'red',
+    fontSize: 13,
   },
 });

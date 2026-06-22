@@ -211,7 +211,7 @@ return (
     >
       {/* Informations client */}
       <View style={styles.card}>
-        <Text style={styles.sectionTitle}>Informations du client</Text>
+        <Text style={styles.sectionTitle}>Informations visite</Text>
 
         <View style={styles.infoRow}>
           <Ionicons name="business-outline" size={18} color={C.primary} />
@@ -263,7 +263,7 @@ return (
           </View>
         </View>
         <View style={styles.infoRow}>
-          <Ionicons name="list-outline" size={18} color={C.primary} />
+          <Ionicons name="layers-outline" size={18} color={C.primary} />
           <View style={styles.infoContent}>
             <Text style={styles.infoLabel}>Type de visite</Text>
             <Text style={styles.infoValue}>
@@ -274,7 +274,7 @@ return (
         <View style={styles.infoRow}>
           <Ionicons name="person-outline" size={18} color={C.primary} />
           <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Commerciale</Text>
+            <Text style={styles.infoLabel}>Commercial</Text>
             <Text style={styles.infoValue}>
               {users?.name || '-'} {users?.firstname || '-'}
             </Text>
