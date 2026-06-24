@@ -232,9 +232,9 @@ export default function Planning() {
             <TouchableOpacity style={[styles.actionBtn, styles.editBtn]}>
               <Ionicons name="create-outline" size={16} color={C.blue} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]}>
+            {/* <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]}>
               <Ionicons name="trash-outline" size={16} color={C.red} />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </View>
           
