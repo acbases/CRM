@@ -140,7 +140,7 @@ export default function Scan2Screen() {
             const body = {
                 idclient: qr.id,
                 idutilisateur: user.id,
-                idcategorie: visite?.idcategorie ?? 5,
+                idcategorie: visite?.idcategorie ?? 4,
                 date: visite?.date ?? new Date().toISOString().split('T')[0],
                 statut: 0,
                 type: visite?.idcategorie ?? 1,

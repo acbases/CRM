@@ -261,7 +261,7 @@ useEffect(() => {
         const corps = {
           idclient: prospect,
           idutilisateur: user.id,
-          idcategorie: 5,
+          idcategorie: 4,
           date: new Date().toISOString().split('T')[0],
           statut: 0,
           type: 1,

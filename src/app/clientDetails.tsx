@@ -139,8 +139,8 @@ export default function ClientDetails() {
       const body = {
         idclient: client?.id,
         idutilisateur: user.id,
-        idcategorie: visiteNatureId,
-        idtype: visiteTypeId ?? null,
+        idcategorie: visiteNatureId ?? 5,
+        idtype: visiteTypeId ?? 2,
         date: `${today} 00:00:00`,
         statut: 0,
         type: 1,
