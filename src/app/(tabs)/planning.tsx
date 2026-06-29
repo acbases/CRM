@@ -229,9 +229,9 @@ export default function Planning() {
                 {status.label}
               </Text>
             </View>
-            <TouchableOpacity style={[styles.actionBtn, styles.editBtn]}>
+            {/* <TouchableOpacity style={[styles.actionBtn, styles.editBtn]}>
               <Ionicons name="create-outline" size={16} color={C.blue} />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             {/* <TouchableOpacity style={[styles.actionBtn, styles.deleteBtn]}>
               <Ionicons name="trash-outline" size={16} color={C.red} />
             </TouchableOpacity> */}
