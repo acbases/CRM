@@ -200,24 +200,24 @@ export default function Planning() {
           {/* GAUCHE : nom + infos */}
           <View style={{ flex: 1, marginRight: 10 }}>
             <Text style={styles.clientName} numberOfLines={1}>
-              {item.client.nom}
+              {item.client.nom ?? '—'}
             </Text>
             <View style={styles.row}>
               <Ionicons name="pricetag-outline" size={13} color={C.grey} style={styles.rowIcon} />
-              <Text style={styles.rowText}>{item.client.categorie_client.intitule}</Text>
+              <Text style={styles.rowText}>{item.client.categorie_client?.intitule ?? '—'}</Text>
             </View>
             <View style={styles.row}>
               <Ionicons name="location-outline" size={13} color={C.grey} style={styles.rowIcon} />
-              <Text style={styles.rowText}>{item.client.zone} — {item.client.quartier}</Text>
+              <Text style={styles.rowText ?? '—'}>{item.client?.zone ?? '—'} — {item.client?.quartier ?? '—'}</Text>
             </View>
             <View style={styles.row}>
               <Ionicons name="calendar-outline" size={13} color={C.grey} style={styles.rowIcon} />
-              <Text style={styles.rowText}>{item.date.split(' ')[0]}</Text>
+              <Text style={styles.rowText}>{item?.date.split(' ')[0] ?? '—'}</Text>
             </View>
             {item.categorie_visite && (
               <View style={styles.row}>
                 <Ionicons name="document-text-outline" size={13} color={C.grey} style={styles.rowIcon} />
-                <Text style={styles.rowText}>{item.categorie_visite.intitule}</Text>
+                <Text style={styles.rowText}>{item.categorie_visite?.intitule ?? '—'}</Text>
               </View>
             )}
           </View>
