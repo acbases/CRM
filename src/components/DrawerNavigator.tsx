@@ -185,12 +185,17 @@ export default function DrawerNavigator() {
                 resizeMode="contain"
               />
             </View>
-            <Text style={styles.drawerAppName}>AlphaCiment CRM</Text>
-            {user && (
-              <Text style={styles.drawerUserName}>
-                {user.firstname} {user.name}
-              </Text>
-            )}
+            <View style={styles.userInfo}>
+              <Text style={styles.drawerAppName}>AlphaCiment CRM</Text>
+              {user && (
+                <Text style={styles.drawerUserName}
+                numberOfLines={2}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}>
+                  {user.firstname} {user.name}
+                </Text>
+              )}
+            </View>
           </View>
 
           {/* Menu items */}
@@ -357,6 +362,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     alignItems: 'center',
   },
+  userInfo: {
+    width: '100%',
+    alignItems: 'center',
+  },
   drawerLogoWrapper: {
     width: 80, height: 80, borderRadius: 40,
     backgroundColor: C.white,
@@ -370,9 +379,15 @@ const styles = StyleSheet.create({
   drawerLogo: { width: 64, height: 64 },
   drawerAppName: {
     color: C.white, fontSize: 16, fontWeight: '700',
-    marginBottom: 4, letterSpacing: 0.3,
+    marginBottom: 4, letterSpacing: 0.3,textAlign: 'center',
   },
-  drawerUserName: { color: 'rgba(255,255,255,0.75)', fontSize: 13 },
+  drawerUserName: { 
+    color: 'rgba(255,255,255,0.75)', 
+    fontSize: 13,
+    textAlign: 'center',
+    width: '100%',
+    marginTop: 4, 
+  },
 
   /* Menu */
   // menuList: { flex: 1, paddingHorizontal: 12, paddingTop: 12 },
