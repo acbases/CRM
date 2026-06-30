@@ -33,7 +33,7 @@
           "backgroundColor": "#E6F4FE",
           "android": {
             "image": "./assets/icone.png",
-            "imageWidth": 200
+            "imageWidth": 400
           }
         }
       ],
