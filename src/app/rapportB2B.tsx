@@ -250,10 +250,10 @@ useEffect(() => {
 
   const handleSubmit = async () => {
     
-    if (!photo) {
-      Alert.alert('Erreur', 'Veuillez ajouter une photo');
-      return;
-    }
+    // if (!photo) {
+    //   Alert.alert('Erreur', 'Veuillez ajouter une photo');
+    //   return;
+    // }
     setSubmitting(true);
     try{ 
       let visiteId: string | number;
@@ -304,7 +304,7 @@ useEffect(() => {
         selectedCorrespondant ? String(selectedCorrespondant.correspondant.id) : ''
       );
 
-      const filename = photo.split('/').pop() || 'photo.jpg';
+      const filename = photo ? photo.split('/').pop() || 'photo.jpg' : 'photo.jpg';
       const match = /\.(\w+)$/.exec(filename);
       formData.append('sary', {
         uri: photo,

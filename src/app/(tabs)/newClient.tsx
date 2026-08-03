@@ -1352,6 +1352,9 @@ overlay: {
     borderRadius: 14,
     paddingVertical: 15,
     alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 32,
+    marginBottom: 24,
   },
 
   cancelText: {
@@ -1360,6 +1363,7 @@ overlay: {
   },
 
   saveButton: {
+    flex: 1,
     backgroundColor: C.blue,
     borderRadius: 16,
     paddingVertical: 18,

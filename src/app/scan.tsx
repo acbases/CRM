@@ -71,7 +71,7 @@ export default function ScanScreen() {
     lat2: number,
     lon2: number
   ) => {
-    const R = 6371e3;
+    const R = 6371e3;     //50m 
     const toRad = (v: number) => (v * Math.PI) / 180;
 
     const dLat = toRad(lat2 - lat1);

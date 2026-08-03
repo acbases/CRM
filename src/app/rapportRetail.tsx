@@ -307,10 +307,10 @@ const buildRefPrix = () => {
 
   // ===================== SUBMIT =====================
 const handleSubmit = async () => {
-  if (!photo) {
-    Alert.alert('Erreur', 'Veuillez ajouter une photo');
-    return;
-  }
+  // if (!photo) {
+  //   Alert.alert('Erreur', 'Veuillez ajouter une photo');
+  //   return;
+  // }
   try {
     let visiteId: string | number;
 
@@ -366,7 +366,7 @@ const handleSubmit = async () => {
     formData.append('description', description);
     formData.append('autre_plv', autrePlv);
     
-    const filename = photo.split('/').pop() || 'photo.jpg';
+    const filename = photo ? photo.split('/').pop() || 'photo.jpg' : 'photo.jpg';
     const match = /\.(\w+)$/.exec(filename);
     formData.append('sary', {
       uri: photo,

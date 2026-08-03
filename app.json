@@ -18,7 +18,7 @@
       },
       "predictiveBackGestureEnabled": false,
       "usesCleartextTraffic": true,
-      "package": "com.anonymous.CRM",
+      "package": "com.alphaciment.CRM",
       "versionCode": 2
     },
     "web": {
@@ -33,7 +33,7 @@
           "backgroundColor": "#E6F4FE",
           "android": {
             "image": "./assets/icone.png",
-            "imageWidth": 400
+            "imageWidth": 300
           }
         }
       ],
