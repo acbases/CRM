@@ -76,6 +76,8 @@ export default function RapportRetail() {
   const [loading, setLoading] = useState(true);
 
   const [photo, setPhoto] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createdVisiteId, setCreatedVisiteId] = useState<string | number | null>(null);
 
 
 
@@ -307,14 +309,16 @@ const buildRefPrix = () => {
 
   // ===================== SUBMIT =====================
 const handleSubmit = async () => {
-  // if (!photo) {
-  //   Alert.alert('Erreur', 'Veuillez ajouter une photo');
-  //   return;
-  // }
+  if (isSubmitting) return; // bloque double-tap et appels concurrents
+  setIsSubmitting(true);
+
   try {
     let visiteId: string | number;
 
-    if (!idVisite) {
+    if (createdVisiteId) {
+      // Une visite a déjà été créée lors d'une tentative précédente (ex: retry après erreur)
+      visiteId = createdVisiteId;
+    } else if (!idVisite) {
       const corps = {
         idclient: prospect,
         idutilisateur: user.id,
@@ -352,27 +356,30 @@ const handleSubmit = async () => {
         throw new Error('Réponse serveur invalide - pas de visite ID');
       }
 
-      visiteId = result.id; 
-    }
-    else{
+      visiteId = result.id;
+      setCreatedVisiteId(visiteId); // mémorise pour éviter une recréation si retry
+    } else {
       visiteId = idVisite as string;
     }
+
     addLog('SUBMIT START');
 
     // 1️⃣ INSERT RAPPORT
-    
+
     const formData = new FormData();
     formData.append('idvisite', String(visiteId));
     formData.append('description', description);
     formData.append('autre_plv', autrePlv);
-    
-    const filename = photo ? photo.split('/').pop() || 'photo.jpg' : 'photo.jpg';
-    const match = /\.(\w+)$/.exec(filename);
-    formData.append('sary', {
-      uri: photo,
-      name: filename,
-      type: match ? `image/${match[1]}` : 'image/jpeg',
-    } as any);
+
+    if (photo) {
+      const filename = photo.split('/').pop() || 'photo.jpg';
+      const match = /\.(\w+)$/.exec(filename);
+      formData.append('sary', {
+        uri: photo,
+        name: filename,
+        type: match ? `image/${match[1]}` : 'image/jpeg',
+      } as any);
+    }
 
     const resRapport = await fetch(`${BASE_URL}/rapport`, {
       method: 'POST',
@@ -448,7 +455,7 @@ const handleSubmit = async () => {
 
     addLog('PRODUIT CLIENT DATA FINAL', produitClientData);
 
-      // 3️⃣ INSERT REF PRIX PRODUIT
+    // 3️⃣ INSERT REF PRIX PRODUIT
     const refPrix = produits
       .filter(p => p.selected)
       .map(p => {
@@ -614,16 +621,19 @@ const handleSubmit = async () => {
     setAutrePlv('');
     setPhoto(null);
     setErrorMessage('');
+    setCreatedVisiteId(null); // reset pour un éventuel nouveau rapport
 
     Alert.alert('Succès', 'Rapport complet enregistré ✅');
     router.replace('/planning');
 
-    }catch (err: any) {
-      addLog('SUBMIT ERROR', err);
-      const msg = err?.message || JSON.stringify(err) || 'Erreur inconnue';
-      setErrorMessage(msg);
-      Alert.alert('Erreur', msg);
-    }
+  } catch (err: any) {
+    addLog('SUBMIT ERROR', err);
+    const msg = err?.message || JSON.stringify(err) || 'Erreur inconnue';
+    setErrorMessage(msg);
+    Alert.alert('Erreur', msg);
+  } finally {
+    setIsSubmitting(false);
+  }
 };
 
   // ===================== UI =====================
@@ -873,17 +883,13 @@ const handleSubmit = async () => {
         />
 
         {/* SUBMIT */}
-        <TouchableOpacity style={styles.submit} onPress={handleSubmit}>
-          
-          <Text
-            style={{
-              color: C.white,
-              fontSize: 16,
-              fontWeight: '700',
-              letterSpacing: 0.5,
-            }}
-          >  
-            ✓ Enregistrer rapport
+        <TouchableOpacity
+          style={[styles.submit, isSubmitting && { opacity: 0.6 }]}
+          onPress={handleSubmit}
+          disabled={isSubmitting}
+        >
+          <Text style={{ color: C.white, fontSize: 16, fontWeight: '700', letterSpacing: 0.5 }}>
+            {isSubmitting ? 'Envoi en cours...' : '✓ Enregistrer rapport'}
           </Text>
         </TouchableOpacity>
         {/* DEBUG */}

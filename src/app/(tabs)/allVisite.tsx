@@ -202,12 +202,11 @@ const getPages = (current: number, total: number) => {
   );
 
   const handlePress = (item: Visite) => {
-    const isB2B = item?.client?.categorie_client?.statut === 'B2B';
+    if (item.statut === 0) return; // rien ne se passe pour les visites non encore faites
 
-    const route =
-      item.statut === 0
-        ? (isB2B ? '/rapportB2B' : '/scan')
-        : (isB2B ? '/resultB2B' : '/resultRetail');
+    const isB2B = item?.client?.categorie_client?.statut === 'B2B';
+    const route = isB2B ? '/resultB2B' : '/resultRetail';
+
     router.push({ pathname: route, params: { idVisite: item.id.toString() } });
   };
 
