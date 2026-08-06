@@ -8,6 +8,9 @@ import {
   StyleSheet,
   ActivityIndicator,
   Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { BASE_URL } from '@/config/api';
 const C = {
@@ -111,54 +114,63 @@ useEffect(() => {
   };
 
   return (
-    <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <Text style={styles.title}>Modifier correspondant</Text>
+    <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
+        <View style={styles.overlay}>
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.container}>
+              <Text style={styles.title}>Modifier correspondant</Text>
 
-          {loadingFetch  ? (
-            <ActivityIndicator size="large" color="#d71f27" />
-          ) : (
-            <>
-              <TextInput
-                style={styles.input}
-                placeholder="Nom"
-                value={nom}
-                onChangeText={setNom}
-              />
+              {loadingFetch  ? (
+                <ActivityIndicator size="large" color="#d71f27" />
+              ) : (
+                <>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Nom"
+                    value={nom}
+                    onChangeText={setNom}
+                  />
 
-              <TextInput
-                style={styles.input}
-                placeholder="Poste"
-                value={poste}
-                onChangeText={setPoste}
-              />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Poste"
+                    value={poste}
+                    onChangeText={setPoste}
+                  />
 
-              <TextInput
-                style={styles.input}
-                placeholder="Contact"
-                value={contact}
-                onChangeText={setContact}
-                keyboardType="phone-pad"
-              />
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Contact"
+                    value={contact}
+                    onChangeText={setContact}
+                    keyboardType="phone-pad"
+                  />
 
-              <TouchableOpacity
-                style={styles.saveBtn}
-                onPress={handleUpdate}
-              >
-                <Text style={styles.saveText}>✔ Sauvegarder</Text>
-              </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.saveBtn}
+                    onPress={handleUpdate}
+                  >
+                    <Text style={styles.saveText}>✔ Sauvegarder</Text>
+                  </TouchableOpacity>
 
-              <TouchableOpacity
-                style={styles.cancelBtn}
-                onPress={onClose}
-              >
-                <Text style={styles.cancelText}>Annuler</Text>
-              </TouchableOpacity>
-            </>
-          )}
+                  <TouchableOpacity
+                    style={styles.cancelBtn}
+                    onPress={onClose}
+                  >
+                    <Text style={styles.cancelText}>Annuler</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </View>
+          </ScrollView>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -166,6 +178,10 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+
+  scrollContent: {
+    flexGrow: 1,
     justifyContent: 'center',
     padding: 20,
   },

@@ -19,7 +19,6 @@ import {
   TextInput,
   TouchableOpacity,
   View,
-  KeyboardAvoidingView,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { BASE_URL } from '../config/api';
@@ -364,21 +363,12 @@ const handleSubmit = async () => {
       <PageHeader title="Rapport B2B" />
 
       <KeyboardAwareScrollView
+        contentContainerStyle={styles.scroll}
         enableOnAndroid
         extraScrollHeight={100}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        <KeyboardAvoidingView
-          style={{ flex: 1 }}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={80}
-        >
-        <ScrollView 
-          contentContainerStyle={styles.scroll} 
-          showsVerticalScrollIndicator={false} 
-          // contentContainerStyle={styles.container}
-          keyboardShouldPersistTaps="handled"
-        >
 
           {/* Infos client */}
           
@@ -570,8 +560,6 @@ const handleSubmit = async () => {
             )}
           </TouchableOpacity>
 
-        </ScrollView>
-        </KeyboardAvoidingView>
       </KeyboardAwareScrollView>
 
       {/* Modal correspondants */}

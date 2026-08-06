@@ -8,6 +8,7 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BASE_URL } from '@/config/api';
@@ -116,7 +117,12 @@ export default function NewFournisseur({ visible, onClose, onSave, idclient }: P
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <View style={styles.overlay}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.overlay}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.card}>
             {/* Header */}
             <View style={styles.header}>
@@ -173,7 +179,7 @@ export default function NewFournisseur({ visible, onClose, onSave, idclient }: P
               </View>
             )}
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -181,7 +187,7 @@ export default function NewFournisseur({ visible, onClose, onSave, idclient }: P
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.45)',
+    flexGrow: 1, backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'center', alignItems: 'center', padding: 20,
   },
   card: {

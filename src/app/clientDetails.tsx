@@ -466,50 +466,52 @@ export default function ClientDetails() {
         >
           <Pressable style={styles.modalOverlay} onPress={() => setShowVisiteModal(false)}>
             <Pressable style={styles.modalSheet} onPress={() => {}}>
-              <View style={styles.sheetHandle} />
-              <Text style={styles.sheetTitle}>Nouvelle visite — {client?.nom}</Text>
+              <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+                <View style={styles.sheetHandle} />
+                <Text style={styles.sheetTitle}>Nouvelle visite — {client?.nom}</Text>
 
-              {/* Nature */}
-              <Text style={styles.sheetLabel}>
-                <Ionicons name="document-text-outline" size={13} color={C.grey} /> Nature de la visite *
-              </Text>
-              <TouchableOpacity style={styles.sheetSelect} onPress={() => setModalNatureVisite(true)}>
-                <Text style={[styles.sheetSelectText, !visiteNature && { color: C.grey }]}>
-                  {visiteNature || 'Sélectionner...'}
+                {/* Nature */}
+                <Text style={styles.sheetLabel}>
+                  <Ionicons name="document-text-outline" size={13} color={C.grey} /> Nature de la visite *
                 </Text>
-                <Ionicons name="chevron-down-outline" size={14} color={C.grey} />
-              </TouchableOpacity>
+                <TouchableOpacity style={styles.sheetSelect} onPress={() => setModalNatureVisite(true)}>
+                  <Text style={[styles.sheetSelectText, !visiteNature && { color: C.grey }]}>
+                    {visiteNature || 'Sélectionner...'}
+                  </Text>
+                  <Ionicons name="chevron-down-outline" size={14} color={C.grey} />
+                </TouchableOpacity>
 
-              {/* Type */}
-              <Text style={styles.sheetLabel}>
-                <Ionicons name="pricetag-outline" size={13} color={C.grey} /> Type de visite
-              </Text>
-              <TouchableOpacity style={styles.sheetSelect} onPress={() => setModalTypeVisite(true)}>
-                <Text style={[styles.sheetSelectText, !visiteType && { color: C.grey }]}>
-                  {visiteType || 'Sélectionner...'}
+                {/* Type */}
+                <Text style={styles.sheetLabel}>
+                  <Ionicons name="pricetag-outline" size={13} color={C.grey} /> Type de visite
                 </Text>
-                <Ionicons name="chevron-down-outline" size={14} color={C.grey} />
-              </TouchableOpacity>
+                <TouchableOpacity style={styles.sheetSelect} onPress={() => setModalTypeVisite(true)}>
+                  <Text style={[styles.sheetSelectText, !visiteType && { color: C.grey }]}>
+                    {visiteType || 'Sélectionner...'}
+                  </Text>
+                  <Ionicons name="chevron-down-outline" size={14} color={C.grey} />
+                </TouchableOpacity>
 
-              {/* Objectif */}
-              <Text style={styles.sheetLabel}>
-                <Ionicons name="flag-outline" size={13} color={C.grey} /> Objectif
-              </Text>
-              <TextInput
-                style={styles.sheetTextArea}
-                placeholder="Décrire l'objectif..."
-                placeholderTextColor={C.grey}
-                multiline
-                numberOfLines={3}
-                value={visiteObjectif}
-                onChangeText={setVisiteObjectif}
-                textAlignVertical="top"
-              />
+                {/* Objectif */}
+                <Text style={styles.sheetLabel}>
+                  <Ionicons name="flag-outline" size={13} color={C.grey} /> Objectif
+                </Text>
+                <TextInput
+                  style={styles.sheetTextArea}
+                  placeholder="Décrire l'objectif..."
+                  placeholderTextColor={C.grey}
+                  multiline
+                  numberOfLines={3}
+                  value={visiteObjectif}
+                  onChangeText={setVisiteObjectif}
+                  textAlignVertical="top"
+                />
 
-              <TouchableOpacity style={styles.sheetSubmitBtn} onPress={handleSubmitVisite} activeOpacity={0.85}>
-                <Ionicons name="checkmark-outline" size={18} color={C.white} style={{ marginRight: 6 }} />
-                <Text style={styles.sheetSubmitText}>Créer la visite</Text>
-              </TouchableOpacity>
+                <TouchableOpacity style={styles.sheetSubmitBtn} onPress={handleSubmitVisite} activeOpacity={0.85}>
+                  <Ionicons name="checkmark-outline" size={18} color={C.white} style={{ marginRight: 6 }} />
+                  <Text style={styles.sheetSubmitText}>Créer la visite</Text>
+                </TouchableOpacity>
+              </ScrollView>
             </Pressable>
           </Pressable>
         </KeyboardAvoidingView>
@@ -641,6 +643,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     padding: 20,
     paddingBottom: 32,
+    maxHeight: '85%',
   },
   sheetHandle: {
     width: 40, height: 4, backgroundColor: '#E5E7EB',

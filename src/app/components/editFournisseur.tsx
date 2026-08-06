@@ -10,6 +10,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { BASE_URL } from '@/config/api';
@@ -133,7 +134,12 @@ export default function EditFournisseur({
   return (
     <Modal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <View style={styles.overlay}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.overlay}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.card}>
             <Text style={styles.title}>Modifier le fournisseur</Text>
 
@@ -187,7 +193,7 @@ export default function EditFournisseur({
               </>
             )}
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </Modal>
   );
@@ -195,7 +201,7 @@ export default function EditFournisseur({
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1, backgroundColor: 'rgba(0,0,0,0.4)',
+    flexGrow: 1, backgroundColor: 'rgba(0,0,0,0.4)',
     justifyContent: 'center', padding: 20,
   },
   card: {

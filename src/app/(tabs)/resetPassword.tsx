@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   SafeAreaView,
 } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { BASE_URL } from '@/config/api';
@@ -108,55 +109,63 @@ export default function ResetPassword() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.card}>
-        <Ionicons name="lock-closed-outline" size={60} color={C.primary} />
+      <KeyboardAwareScrollView
+        contentContainerStyle={styles.scroll}
+        enableOnAndroid
+        extraScrollHeight={24}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.card}>
+          <Ionicons name="lock-closed-outline" size={60} color={C.primary} />
 
-        <Text style={styles.title}>Changer le mot de passe</Text>
+          <Text style={styles.title}>Changer le mot de passe</Text>
 
-        <TextInput
-          placeholder="Mot de passe actuel"
-          secureTextEntry
-          value={currentPassword}
-          onChangeText={setCurrentPassword}
-          style={styles.input}
-        />
+          <TextInput
+            placeholder="Mot de passe actuel"
+            secureTextEntry
+            value={currentPassword}
+            onChangeText={setCurrentPassword}
+            style={styles.input}
+          />
 
-        <TextInput
-          placeholder="Nouveau mot de passe"
-          secureTextEntry
-          value={newPassword}
-          onChangeText={setNewPassword}
-          style={styles.input}
-        />
+          <TextInput
+            placeholder="Nouveau mot de passe"
+            secureTextEntry
+            value={newPassword}
+            onChangeText={setNewPassword}
+            style={styles.input}
+          />
 
-        <TextInput
-          placeholder="Confirmer le nouveau mot de passe"
-          secureTextEntry
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          style={styles.input}
-        />
-        {!passwordsMatch() && (
-          <View style={styles.errorRow}>
-            <Ionicons name="alert-circle-outline" size={18} color="red" />
-            <Text style={styles.errorText}>
-              Les mots de passe ne correspondent pas
-            </Text>
-          </View>
-        )}
-
-        <TouchableOpacity
-          style={styles.button}
-          onPress={handleChangePassword}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.buttonText}>Modifier</Text>
+          <TextInput
+            placeholder="Confirmer le nouveau mot de passe"
+            secureTextEntry
+            value={confirmPassword}
+            onChangeText={setConfirmPassword}
+            style={styles.input}
+          />
+          {!passwordsMatch() && (
+            <View style={styles.errorRow}>
+              <Ionicons name="alert-circle-outline" size={18} color="red" />
+              <Text style={styles.errorText}>
+                Les mots de passe ne correspondent pas
+              </Text>
+            </View>
           )}
-        </TouchableOpacity>
-      </View>
+
+          <TouchableOpacity
+            style={styles.button}
+            onPress={handleChangePassword}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.buttonText}>Modifier</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+      </KeyboardAwareScrollView>
     </SafeAreaView>
   );
 }
@@ -165,6 +174,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
+  },
+  scroll: {
+    flexGrow: 1,
     justifyContent: 'center',
     padding: 20,
   },

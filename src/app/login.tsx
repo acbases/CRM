@@ -104,7 +104,8 @@ export default function LoginScreen() {
       <KeyboardAwareScrollView
         contentContainerStyle={styles.container}
         enableOnAndroid
-        extraScrollHeight={24}
+        extraScrollHeight={40}
+        enableAutomaticScroll
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -216,9 +217,9 @@ const styles = StyleSheet.create({
   },
   container: {
     flexGrow: 1,
-    justifyContent: 'center',
     paddingHorizontal: 24,
-    paddingVertical: 24,
+    paddingTop: 64,
+    paddingBottom: 24,
   },
   logo: {
     width: 110,

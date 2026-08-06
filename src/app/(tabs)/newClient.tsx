@@ -903,14 +903,15 @@ const handleSubmit = async () => {
         animationType="fade"
         onRequestClose={() => setShowCorrespondant(false)}
       >
-        <View style={styles.overlay}>
-          <KeyboardAvoidingView
-            behavior={
-              Platform.OS === 'ios'
-                ? 'padding'
-                : undefined
-            }
-            style={styles.keyboardContainer}
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={{ flex: 1 }}
+        >
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={styles.overlay}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
           >
             <View style={styles.modalCard}>
               {/* Header */}
@@ -1008,8 +1009,8 @@ const handleSubmit = async () => {
                 </View>
               )}
             </View>
-          </KeyboardAvoidingView>
-        </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
       </Modal>
       {/* <NewCorrespondant
         visible={showCorrespondant}
@@ -1265,18 +1266,15 @@ suggestionItem: {
   justifyContent: 'center',
 },
 overlay: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: 'rgba(0,0,0,0.45)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
 
-  keyboardContainer: {
-    width: '100%',
-  },
-
   modalCard: {
+    width: '100%',
     backgroundColor: '#fff',
     borderRadius: 24,
     padding: 22,

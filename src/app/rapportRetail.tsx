@@ -6,9 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
-  KeyboardAvoidingView,
   Platform,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -642,20 +640,12 @@ const handleSubmit = async () => {
     {/* <SafeAreaView style={styles.container}> */}
     <PageHeader title="Rapport retail" />
     <KeyboardAwareScrollView
+      contentContainerStyle={styles.scroll}
       enableOnAndroid
       extraScrollHeight={100}
       keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
     >
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={80}
-    >
-      <ScrollView
-        keyboardShouldPersistTaps="handled"
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
 
         {/* <Text style={styles.title}>Rapport Retail</Text> */}
         {/* <Text>Id visite: {idVisite}</Text> */}
@@ -728,8 +718,9 @@ const handleSubmit = async () => {
 
             {p.selected && (
             <>
+                <Text style={styles.fieldLabel}>Prix achat (Ar)</Text>
                 <TextInput
-                placeholder="Prix achat (Ar)"
+                placeholder="0"
                 keyboardType="numeric"
                 style={styles.input}
                 value={p.prix_achat}
@@ -738,8 +729,9 @@ const handleSubmit = async () => {
                 }
                 />
 
+                <Text style={styles.fieldLabel}>Prix vente gros (Ar)</Text>
                 <TextInput
-                placeholder="Prix vente gros (Ar)"
+                placeholder="0"
                 keyboardType="numeric"
                 style={styles.input}
                 value={p.prix_vente_gros}
@@ -748,8 +740,9 @@ const handleSubmit = async () => {
                 }
                 />
 
+                <Text style={styles.fieldLabel}>Prix vente détail (Ar)</Text>
                 <TextInput
-                placeholder="Prix vente détail (Ar)"
+                placeholder="0"
                 keyboardType="numeric"
                 style={styles.input}
                 value={p.prix_vente_details}
@@ -758,8 +751,9 @@ const handleSubmit = async () => {
                 }
                 />
 
+                <Text style={styles.fieldLabel}>Coût transport (Ar)</Text>
                 <TextInput
-                placeholder="Coût transport (Ar)"
+                placeholder="0"
                 keyboardType="numeric"
                 style={styles.input}
                 value={p.cout_transport}
@@ -768,8 +762,9 @@ const handleSubmit = async () => {
                 }
                 />
 
+                <Text style={styles.fieldLabel}>Marge</Text>
                 <TextInput
-                placeholder="Marge"
+                placeholder="0"
                 keyboardType="numeric"
                 style={styles.input}
                 value={p.marge}
@@ -778,8 +773,9 @@ const handleSubmit = async () => {
                 }
                 />
 
+                <Text style={styles.fieldLabel}>Quantité (Tonnes)</Text>
                 <TextInput
-                placeholder="Quantité (Tonnes)"
+                placeholder="0"
                 keyboardType="numeric"
                 style={styles.input}
                 value={p.volume}
@@ -798,37 +794,44 @@ const handleSubmit = async () => {
         {autresProduits.map((p, i) => (
           <View key={p.id} style={styles.card}>
 
-            <TextInput placeholder="Nom produit" style={styles.input}
+            <Text style={styles.fieldLabel}>Nom du produit</Text>
+            <TextInput placeholder="Ex : Ciment 50kg" style={styles.input}
               value={p.nom}
               onChangeText={v => updateAutre(i, 'nom', v)}
             />
 
-            <TextInput placeholder="Prix achat (Ar)" style={styles.input} keyboardType="numeric"
+            <Text style={styles.fieldLabel}>Prix achat (Ar)</Text>
+            <TextInput placeholder="0" style={styles.input} keyboardType="numeric"
               value={p.prix_achat}
               onChangeText={v => updateAutre(i, 'prix_achat', v)}
             />
 
-            <TextInput placeholder="Prix vente gros (Ar)" style={styles.input} keyboardType="numeric"
+            <Text style={styles.fieldLabel}>Prix vente gros (Ar)</Text>
+            <TextInput placeholder="0" style={styles.input} keyboardType="numeric"
               value={p.prix_vente_gros}
               onChangeText={v => updateAutre(i, 'prix_vente_gros', v)}
             />
 
-            <TextInput placeholder="Prix vente détail (Ar)" style={styles.input} keyboardType="numeric"
+            <Text style={styles.fieldLabel}>Prix vente détail (Ar)</Text>
+            <TextInput placeholder="0" style={styles.input} keyboardType="numeric"
               value={p.prix_vente_details}
               onChangeText={v => updateAutre(i, 'prix_vente_details', v)}
             />
 
-            <TextInput placeholder="Coût transport (Ar)" style={styles.input} keyboardType="numeric"
+            <Text style={styles.fieldLabel}>Coût transport (Ar)</Text>
+            <TextInput placeholder="0" style={styles.input} keyboardType="numeric"
               value={p.cout_transport}
               onChangeText={v => updateAutre(i, 'cout_transport', v)}
             />
 
-            <TextInput placeholder="Marge" style={styles.input} keyboardType="numeric"
+            <Text style={styles.fieldLabel}>Marge</Text>
+            <TextInput placeholder="0" style={styles.input} keyboardType="numeric"
               value={p.marge}
               onChangeText={v => updateAutre(i, 'marge', v)}
             />
 
-            <TextInput placeholder="Quantité (Tonnes)" style={styles.input} keyboardType="numeric"
+            <Text style={styles.fieldLabel}>Quantité (Tonnes)</Text>
+            <TextInput placeholder="0" style={styles.input} keyboardType="numeric"
               value={p.volume}
               onChangeText={v => updateAutre(i, 'volume', v)}
             />
@@ -850,8 +853,9 @@ const handleSubmit = async () => {
           </TouchableOpacity>
         ))}
         <View style={styles.block}>
+          <Text style={styles.fieldLabel}>Autre PLV</Text>
           <TextInput
-            placeholder="Autre PLV"
+            placeholder="Préciser si non listée..."
             style={styles.input}
             value={autrePlv}
             onChangeText={setAutrePlv}
@@ -899,9 +903,6 @@ const handleSubmit = async () => {
             <Text selectable style={styles.debugText}>{debugLog}</Text>
         </View>
         )} */}
-      </ScrollView>
-      </KeyboardAvoidingView>
-
       </KeyboardAwareScrollView>
     {/* </SafeAreaView> */}
     </View>
@@ -958,6 +959,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: C.dark,
+  },
+
+  fieldLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: C.grey,
+    marginTop: 10,
+    marginBottom: 4,
   },
 
   input: {
