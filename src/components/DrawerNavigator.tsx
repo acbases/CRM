@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { Slot, useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/context/AuthContext';
 
 const DRAWER_WIDTH = 280;
@@ -71,6 +72,7 @@ export default function DrawerNavigator() {
   const router = useRouter();
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const insets = useSafeAreaInsets();
 
   /* ── Drawer open/close ── */
 
@@ -175,9 +177,9 @@ export default function DrawerNavigator() {
       <Animated.View
         style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}
       >
-        <SafeAreaView style={styles.drawerContainer}>
+        <View style={styles.drawerContainer}>
           {/* Hero rouge */}
-          <View style={styles.drawerHero}>
+          <View style={[styles.drawerHero, { paddingTop: insets.top + 36 }]}>
             <View style={styles.drawerLogoWrapper}>
               <Image
                 source={require('../../assets/logo.png')}
@@ -228,7 +230,7 @@ export default function DrawerNavigator() {
           
 
           {/* Footer */}
-          <View style={styles.drawerFooter}>
+          <View style={[styles.drawerFooter, { paddingBottom: insets.bottom + 12 }]}>
             <View style={styles.footerDivider} />
             <TouchableOpacity style={styles.logoutItem} onPress={askLogout} activeOpacity={0.75}>
               <View style={styles.logoutIconWrap}>
@@ -237,7 +239,7 @@ export default function DrawerNavigator() {
               <Text style={styles.logoutLabel}>Se déconnecter</Text>
             </TouchableOpacity>
           </View>
-        </SafeAreaView>
+        </View>
       </Animated.View>
 
       {/* ─── MODALE DE CONFIRMATION DÉCONNEXION ─── */}
