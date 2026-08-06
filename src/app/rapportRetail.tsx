@@ -231,6 +231,10 @@ useEffect(() => {
     setAutresProduits(copy);
   };
 
+  const removeAutreProduit = (id: number) => {
+    setAutresProduits(prev => prev.filter(p => p.id !== id));
+  };
+
   // ===================== PLV TOGGLE =====================
   const togglePlv = (id: number) => {
     setSelectedPlvs(prev =>
@@ -794,8 +798,20 @@ const handleSubmit = async () => {
         {autresProduits.map((p, i) => (
           <View key={p.id} style={styles.card}>
 
+            <View style={styles.autreProduitHeader}>
+              <Text style={styles.name}>Produit #{i + 1}</Text>
+              <TouchableOpacity
+                style={styles.removeAutreBtn}
+                onPress={() => removeAutreProduit(p.id)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons name="trash-outline" size={16} color={C.primary} />
+                <Text style={styles.removeAutreBtnText}>Supprimer</Text>
+              </TouchableOpacity>
+            </View>
+
             <Text style={styles.fieldLabel}>Nom du produit</Text>
-            <TextInput placeholder="Ex : Ciment 50kg" style={styles.input}
+            <TextInput placeholder="Ex : Ciment " style={styles.input}
               value={p.nom}
               onChangeText={v => updateAutre(i, 'nom', v)}
             />
@@ -953,6 +969,29 @@ const styles = StyleSheet.create({
   productHeader: {
     paddingVertical: 4,
     marginBottom: 8,
+  },
+
+  autreProduitHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+
+  removeAutreBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: '#FEE2E2',
+  },
+
+  removeAutreBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: C.primary,
   },
 
   name: {
