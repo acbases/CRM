@@ -174,26 +174,29 @@ const getPages = (current: number, total: number) => {
   };
 
   // ── Filtrage client-side ──
-  const filteredVisites = visites.filter((v) => {
-    // Filtre statut
-    if (activeFilter === 'done'    && !(v.statut === 1))                     return false;
-    if (activeFilter === 'late'    && !(v.statut === 0 && v.date < today))   return false;
-    if (activeFilter === 'planned' && !(v.statut === 0 && v.date >= today))  return false;
-    // Filtre commercial
-    if (searchCommercial.trim()) {
-      const u = users[v.idutilisateur];
-      const name = u ? `${u.firstname ?? ''} ${u.name ?? ''}`.toLowerCase() : '';
-      if (!name.includes(searchCommercial.toLowerCase())) return false;
-    }
-    return true;
-  });
+  // ── Filtrage par commercial (appliqué avant les chips, pour que les compteurs en dépendent) ──
+const visitesByCommercial = visites.filter((v) => {
+  if (!searchCommercial.trim()) return true;
+  const u = users[v.idutilisateur];
+  const name = u ? `${u.firstname ?? ''} ${u.name ?? ''}`.toLowerCase() : '';
+  return name.includes(searchCommercial.toLowerCase());
+});
 
-  const counts: Record<FilterKey, number> = {
-    all:     visites.length,
-    planned: visites.filter(v => v.statut === 0 && v.date >= today).length,
-    late:    visites.filter(v => v.statut === 0 && v.date < today).length,
-    done:    visites.filter(v => v.statut === 1).length,
-  };
+// ── Filtrage par statut (chips) appliqué sur le résultat déjà filtré par commercial ──
+const filteredVisites = visitesByCommercial.filter((v) => {
+  if (activeFilter === 'done'    && !(v.statut === 1))                     return false;
+  if (activeFilter === 'late'    && !(v.statut === 0 && v.date < today))   return false;
+  if (activeFilter === 'planned' && !(v.statut === 0 && v.date >= today))  return false;
+  return true;
+});
+
+// Les compteurs des chips reflètent maintenant le filtre commercial
+const counts: Record<FilterKey, number> = {
+  all:     visitesByCommercial.length,
+  planned: visitesByCommercial.filter(v => v.statut === 0 && v.date >= today).length,
+  late:    visitesByCommercial.filter(v => v.statut === 0 && v.date < today).length,
+  done:    visitesByCommercial.filter(v => v.statut === 1).length,
+};
 
   const totalPages = Math.max(1, Math.ceil(filteredVisites.length / ITEMS_PER_PAGE));
   const paginatedData = filteredVisites.slice(
