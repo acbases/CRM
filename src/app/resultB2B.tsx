@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, ActivityIndicator, TouchableOpacity,Modal } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { BASE_URL } from '../config/api';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import PageHeader from '@/components/PageHeader';
 import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Image, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { BASE_URL, normalizeMediaUrl } from '../config/api';
 
 const C = {
   primary: '#EF2D24',
@@ -177,7 +177,10 @@ useEffect(() => {
 
   fetch(`${BASE_URL}/getRapportB2BByIdVisite/${idVisite}`)
     .then(res => res.json())
-    .then(json => setRapport(Array.isArray(json) ? json[0] : json))
+    .then(json => {
+      const item = Array.isArray(json) ? json[0] : json;
+      setRapport(item ? { ...item, sary: normalizeMediaUrl(item?.sary) } : null);
+    })
     .catch(err => console.log(err))
     .finally(() => setLoading(false));
     console.log('RAPPORT B2B:', rapport);
@@ -321,9 +324,9 @@ return (
       <View style={styles.card}>
         <Text style={styles.sectionTitle}>Photo</Text>
 
-        {rapport.sary ? (
+        {normalizeMediaUrl(rapport.sary) ? (
           <TouchableOpacity onPress={() => setPhotoVisible(true)}>
-            <Image source={{ uri: rapport.sary }} style={styles.image} />
+            <Image source={{ uri: normalizeMediaUrl(rapport.sary) ?? undefined }} style={styles.image} />
           </TouchableOpacity>
         ) : (
           <View style={styles.emptyPhoto}>
@@ -357,7 +360,7 @@ return (
           activeOpacity={1}
         >
           <Image
-            source={{ uri: rapport.sary ?? undefined }}
+            source={{ uri: normalizeMediaUrl(rapport.sary) ?? undefined }}
             style={styles.fullImage}
             resizeMode="contain"
           />

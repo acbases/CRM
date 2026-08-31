@@ -1,18 +1,20 @@
-import React, { useEffect, useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  StyleSheet,
-  ActivityIndicator,
-  SafeAreaView,
-  Image,TouchableOpacity,Modal,
-} from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
-import { BASE_URL } from '../config/api';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import PageHeader from '@/components/PageHeader';
 import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Image,
+  Modal,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { BASE_URL, normalizeMediaUrl } from '../config/api';
 
 const C = {
   primary: '#EF2D24',
@@ -79,7 +81,12 @@ export default function ResultRetail() {
         `${BASE_URL}/getRapportByIdVisite/${idVisite}` //rapport
       );
       const rapportJson = await responseRapport.json();
-      setRapport(rapportJson);
+      const normalizedRapport = Array.isArray(rapportJson)
+        ? rapportJson.map((item: any) => ({ ...item, sary: normalizeMediaUrl(item?.sary) }))
+        : rapportJson
+          ? { ...rapportJson, sary: normalizeMediaUrl(rapportJson?.sary) }
+          : rapportJson;
+      setRapport(normalizedRapport);
 
       const responseProduits = await fetch(
         `${BASE_URL}/getVueRapportProduitsByIdVisite/${idVisite}` //produits
@@ -378,9 +385,9 @@ export default function ResultRetail() {
         <View style={styles.card}>
           <Text style={styles.sectionTitle}>Photo</Text>
 
-          {rapport?.[0]?.sary ? (   // ✅ rapport est un tableau comme les autres données
+          {normalizeMediaUrl(rapport?.[0]?.sary ?? rapport?.sary) ? (
             <TouchableOpacity onPress={() => setPhotoVisible(true)}>
-              <Image source={{ uri: rapport[0].sary }} style={styles.image} />
+              <Image source={{ uri: normalizeMediaUrl(rapport?.[0]?.sary ?? rapport?.sary) ?? undefined }} style={styles.image} />
             </TouchableOpacity>
           ) : (
             <View style={styles.emptyPhoto}>
@@ -405,7 +412,7 @@ export default function ResultRetail() {
           activeOpacity={1}
         >
           <Image
-            source={{ uri: rapport?.[0]?.sary ?? undefined }}  // ✅
+            source={{ uri: normalizeMediaUrl(rapport?.[0]?.sary ?? rapport?.sary) ?? undefined }}
             style={styles.fullImage}
             resizeMode="contain"
           />
