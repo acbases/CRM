@@ -123,6 +123,7 @@ export default function ResetPassword() {
 
           <TextInput
             placeholder="Mot de passe actuel"
+            placeholderTextColor={C.grey}
             secureTextEntry
             value={currentPassword}
             onChangeText={setCurrentPassword}
@@ -131,6 +132,7 @@ export default function ResetPassword() {
 
           <TextInput
             placeholder="Nouveau mot de passe"
+            placeholderTextColor={C.grey}
             secureTextEntry
             value={newPassword}
             onChangeText={setNewPassword}
@@ -139,6 +141,7 @@ export default function ResetPassword() {
 
           <TextInput
             placeholder="Confirmer le nouveau mot de passe"
+            placeholderTextColor={C.grey}
             secureTextEntry
             value={confirmPassword}
             onChangeText={setConfirmPassword}
@@ -171,6 +174,16 @@ export default function ResetPassword() {
 }
 
 const styles = StyleSheet.create({
+  input: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    padding: 12,
+    marginTop: 10,
+    backgroundColor: '#fff',
+    color: C.dark, // <- ajouter ceci
+  },
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
@@ -193,15 +206,15 @@ const styles = StyleSheet.create({
     marginVertical: 15,
     color: '#333',
   },
-  input: {
-    width: '100%',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 10,
-    padding: 12,
-    marginTop: 10,
-    backgroundColor: '#fff',
-  },
+  // input: {
+  //   width: '100%',
+  //   borderWidth: 1,
+  //   borderColor: '#ddd',
+  //   borderRadius: 10,
+  //   padding: 12,
+  //   marginTop: 10,
+  //   backgroundColor: '#fff',
+  // },
   button: {
     backgroundColor: C.blue,
     padding: 15,

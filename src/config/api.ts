@@ -1,4 +1,5 @@
-export const API_ROOT = 'https://allapps.alphaciment.com/crm_back';
+// export const API_ROOT = 'https://allapps.alphaciment.com/crm_back';
+export const API_ROOT = 'http://127.0.0.1:8000';
 export const BASE_URL = `${API_ROOT}/api`;
 // export const BASE_URL = 'http://10.192.193.246:8000/api';
 
