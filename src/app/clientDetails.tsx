@@ -201,7 +201,7 @@ export default function ClientDetails() {
     try {
       const response = await fetch(
         `${BASE_URL}/correspondantClient/${itemId}`,
-        { method: 'DELETE', headers: { Accept: 'application/json' } }
+        { method: 'POST', headers: { Accept: 'application/json' } }
       );
       if (!response.ok) {
         Alert.alert('Erreur', 'Suppression impossible');
@@ -229,7 +229,7 @@ export default function ClientDetails() {
     try {
       const response = await fetch(
         `${BASE_URL}/fournisseurClient/${itemId}`,
-        { method: 'DELETE', headers: { Accept: 'application/json' } }
+        { method: 'POST', headers: { Accept: 'application/json' } }
       );
       if (!response.ok) {
         Alert.alert('Erreur', 'Suppression impossible');

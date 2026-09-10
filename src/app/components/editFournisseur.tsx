@@ -99,10 +99,10 @@ export default function EditFournisseur({
     setLoading(true);
     try {
       if (selectedExisting && idfournisseurclient && idclient) {
-        // Remplacer la liaison par un fournisseur existant
+        // Désactiver l'ancienne liaison (statut false) et créer la nouvelle (statut true)
         await fetch(
           `${BASE_URL}/fournisseurClient/${idfournisseurclient}`,
-          { method: 'DELETE', headers: { Accept: 'application/json' } }
+          { method: 'POST', headers: { Accept: 'application/json' } }
         );
         await fetch(`${BASE_URL}/fournisseurClient`, {
           method: 'POST',

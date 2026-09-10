@@ -50,7 +50,7 @@ export default function Clients() {
   const fetchClients = async () => {
     try {
       const res = await fetchWithTimeout(
-        `${BASE_URL}/clients`
+        `${BASE_URL}/clients-actif`
       );
       const data = await res.json();
       const list = Array.isArray(data) ? data : [];
