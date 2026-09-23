@@ -63,7 +63,7 @@ type FilterKey = 'all' | 'planned' | 'late' | 'done';
 
 const FILTER_DEFS: { key: FilterKey; label: string }[] = [
   { key: 'all',     label: 'Tous'       },
-  { key: 'planned', label: 'Planifiées' },
+  { key: 'planned', label: 'En cours' },
   { key: 'late',    label: 'En retard'  },
   { key: 'done',    label: 'Effectuées'     },
 ];
@@ -170,7 +170,7 @@ const getPages = (current: number, total: number) => {
   const getStatusInfo = (v: Visite) => {
     if (v.statut === 1) return { color: C.green,  bg: C.greenBg,  label: 'EFFECTUÉE' };
     if (v.date < today)  return { color: C.red,    bg: C.redBg,    label: 'EN RETARD'    };
-    return                      { color: C.orange, bg: C.orangeBg, label: 'PLANIFIÉES'    };
+    return                      { color: C.orange, bg: C.orangeBg, label: 'EN COURS'    };
   };
 
   // ── Filtrage client-side ──

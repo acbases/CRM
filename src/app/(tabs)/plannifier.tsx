@@ -182,6 +182,12 @@ export default function NewVisiteScreen() {
       Alert.alert('Erreur', 'Utilisateur non connecté');
       return;
     }
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    if (date < todayStart) {
+      Alert.alert('Erreur', 'Impossible de planifier une visite à une date antérieure à aujourd\'hui');
+      return;
+    }
     try {
       const body = {
         idclient: clientId,
@@ -434,6 +440,7 @@ export default function NewVisiteScreen() {
                   value={date}
                   mode="date"
                   display="calendar"
+                  minimumDate={new Date()}
                   onChange={onChangeDate}
                 />
               )}
@@ -450,6 +457,7 @@ export default function NewVisiteScreen() {
                 backgroundColor: C.white,
               }}
               value={date.toISOString().split('T')[0]}
+              min={new Date().toISOString().split('T')[0]}
               onChange={(e) => setDate(new Date(e.target.value))}
             />
           )}
